@@ -2,95 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* GreenLens Design System - Professional Sustainability Theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 @layer base {
   :root {
+    /* Core Colors - Forest Green & Earth Tones */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 150 10% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 150 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 150 10% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Deep Forest Green */
+    --primary: 158 64% 22%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Sage/Muted Green */
+    --secondary: 150 20% 94%;
+    --secondary-foreground: 158 64% 22%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted - Light Gray Green */
+    --muted: 150 10% 96%;
+    --muted-foreground: 150 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Olive/Earth Tone */
+    --accent: 75 40% 45%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Highlight - Teal for gradient boxes */
+    --highlight: 175 50% 50%;
+    --highlight-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --border: 150 10% 90%;
+    --input: 150 10% 90%;
+    --ring: 158 64% 22%;
 
+    --radius: 0px;
+
+    /* Custom Gradients */
+    --gradient-accent: linear-gradient(135deg, hsl(75 40% 45%) 0%, hsl(175 50% 50%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(75 45% 50%) 0%, hsl(175 55% 55%) 100%);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(150 10% 10% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(150 10% 10% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(150 10% 10% / 0.1);
+
+    /* Sidebar */
     --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-foreground: 150 10% 26%;
+    --sidebar-primary: 158 64% 22%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 150 20% 96%;
+    --sidebar-accent-foreground: 158 64% 22%;
+    --sidebar-border: 150 10% 91%;
+    --sidebar-ring: 158 64% 52%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 150 15% 8%;
+    --foreground: 150 10% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 150 15% 10%;
+    --card-foreground: 150 10% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 150 15% 10%;
+    --popover-foreground: 150 10% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 158 55% 45%;
+    --primary-foreground: 150 15% 8%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 150 15% 18%;
+    --secondary-foreground: 150 10% 95%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 150 15% 18%;
+    --muted-foreground: 150 10% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 75 35% 50%;
+    --accent-foreground: 150 15% 8%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --highlight: 175 45% 55%;
+    --highlight-foreground: 150 15% 8%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 150 10% 95%;
+
+    --border: 150 15% 18%;
+    --input: 150 15% 18%;
+    --ring: 158 55% 45%;
+
+    --sidebar-background: 150 15% 10%;
+    --sidebar-foreground: 150 10% 95%;
+    --sidebar-primary: 158 55% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 150 15% 15%;
+    --sidebar-accent-foreground: 150 10% 95%;
+    --sidebar-border: 150 15% 15%;
+    --sidebar-ring: 158 55% 50%;
   }
 }
 
@@ -100,6 +115,66 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    @apply font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Squared button styles */
+  .btn-squared {
+    @apply px-6 py-3 font-semibold transition-all duration-200;
+    border-radius: 0;
+  }
+
+  .btn-squared-primary {
+    @apply btn-squared bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  .btn-squared-outline {
+    @apply btn-squared border-2 border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background;
+  }
+
+  .btn-squared-ghost {
+    @apply btn-squared bg-transparent text-foreground hover:bg-muted;
+  }
+
+  /* Gradient highlight box */
+  .highlight-box {
+    background: var(--gradient-hero);
+    @apply px-4 py-2 text-white inline-block;
+  }
+
+  /* Section styles */
+  .section-padding {
+    @apply py-20 md:py-32 px-6 md:px-12;
+  }
+
+  /* Card squared style */
+  .card-squared {
+    @apply bg-card border border-border p-8;
+    border-radius: 0;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
   }
 }
