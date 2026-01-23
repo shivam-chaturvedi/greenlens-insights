@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Leaf, Mail, MapPin } from "lucide-react";
+import { ArrowUpRight, Globe, Mail, MapPin } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -9,7 +9,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-6">
-              <Leaf className="w-6 h-6 text-accent" />
+              <Globe className="w-6 h-6 text-accent" />
               <span className="font-display text-xl font-bold">GreenLens</span>
             </div>
             <p className="text-background/70 text-sm leading-relaxed mb-6">
@@ -91,7 +91,7 @@ const Footer = () => {
         <div className="mt-16 pt-8 border-t border-background/20">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-background/50 text-sm">
-              © 2024 GreenLens. All rights reserved.
+              © 2026 GreenLens. All rights reserved.
             </p>
             <div className="flex gap-6">
               <Link to="#" className="text-background/50 hover:text-background text-sm transition-colors">
