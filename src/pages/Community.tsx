@@ -23,6 +23,7 @@ type PostType = {
     comments: CommentType[];
     time: string;
     isDeleted?: boolean;
+    userLiked?: boolean;
 };
 
 const initialPosts: PostType[] = [
@@ -122,7 +123,54 @@ const Community = () => {
     };
 
     const handleLike = (id: number) => {
-        setPosts(posts.map(post => post.id === id ? { ...post, likes: post.likes + 1 } : post));
+        setPosts(posts.map(post => {
+            if (post.id === id) {
+                const isLiked = !!post.userLiked;
+                return {
+                    ...post,
+                    likes: isLiked ? post.likes - 1 : post.likes + 1,
+                    userLiked: !isLiked
+                };
+            }
+            return post;
+        }));
+
+        const post = posts.find(p => p.id === id);
+        if (post && !post.userLiked) {
+            toast({
+                title: "Upvoted!",
+                description: "You've upvoted this post.",
+            });
+        }
+    };
+
+    const handleShare = async (id: number) => {
+        const post = posts.find(p => p.id === id);
+        if (!post) return;
+
+        const shareData = {
+            title: post.title,
+            text: post.content,
+            url: window.location.href,
+        };
+
+        if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+            try {
+                await navigator.share(shareData);
+                toast({ title: "Shared!", description: "Post shared successfully." });
+            } catch (err) {
+                if ((err as Error).name !== "AbortError") {
+                    console.error("Error sharing:", err);
+                }
+            }
+        } else {
+            // Fallback for browsers that don't support navigator.share
+            navigator.clipboard.writeText(window.location.href);
+            toast({
+                title: "Link copied!",
+                description: "The link has been copied to your clipboard.",
+            });
+        }
     };
 
     const handleAddComment = (postId: number) => {
@@ -255,9 +303,9 @@ const Community = () => {
                                         <div className="flex items-center gap-6 text-sm text-muted-foreground pt-4 border-t border-border">
                                             <button
                                                 onClick={() => handleLike(post.id)}
-                                                className="flex items-center gap-2 hover:text-primary transition-colors font-medium"
+                                                className={`flex items-center gap-2 transition-colors font-medium ${post.userLiked ? "text-primary" : "hover:text-primary"}`}
                                             >
-                                                <ThumbsUp className="w-4 h-4" />
+                                                <ThumbsUp className={`w-4 h-4 ${post.userLiked ? "fill-primary" : ""}`} />
                                                 {post.likes} Upvotes
                                             </button>
                                             <button
@@ -267,7 +315,10 @@ const Community = () => {
                                                 <MessageSquare className="w-4 h-4" />
                                                 {post.comments.length} Comments
                                             </button>
-                                            <button className="flex items-center gap-2 hover:text-primary transition-colors ml-auto font-medium">
+                                            <button
+                                                onClick={() => handleShare(post.id)}
+                                                className="flex items-center gap-2 hover:text-primary transition-colors ml-auto font-medium"
+                                            >
                                                 Share
                                             </button>
                                         </div>
@@ -333,8 +384,8 @@ const Community = () => {
                                     key={category}
                                     onClick={() => setActiveCategory(category)}
                                     className={`text-left px-4 py-3 text-sm font-medium transition-colors border-l-2 ${activeCategory === category
-                                            ? "border-primary bg-primary/5 text-primary"
-                                            : "border-transparent text-foreground hover:bg-muted"
+                                        ? "border-primary bg-primary/5 text-primary"
+                                        : "border-transparent text-foreground hover:bg-muted"
                                         }`}
                                 >
                                     {category}

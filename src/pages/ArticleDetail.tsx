@@ -165,12 +165,29 @@ const ArticleDetail = () => {
         setIsLiked(!isLiked);
     };
 
-    const handleShare = () => {
-        navigator.clipboard.writeText(window.location.href);
-        toast({
-            title: "Link copied!",
-            description: "Article link has been copied to your clipboard.",
-        });
+    const handleShare = async () => {
+        const shareData = {
+            title: article.title,
+            text: article.content.replace(/<[^>]*>/g, '').substring(0, 100) + "...",
+            url: window.location.href,
+        };
+
+        if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+            try {
+                await navigator.share(shareData);
+                toast({ title: "Shared!", description: "Article shared successfully." });
+            } catch (err) {
+                if ((err as Error).name !== "AbortError") {
+                    console.error("Error sharing:", err);
+                }
+            }
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            toast({
+                title: "Link copied!",
+                description: "Article link has been copied to your clipboard.",
+            });
+        }
     };
 
     const handleBookmark = () => {
