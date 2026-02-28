@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { ArrowUpRight, Car, Zap, Plane, Home, Utensils, ShoppingBag } from "lucide-react";
+import { ArrowUpRight, Car, Zap, Plane, Home, Utensils, ShoppingBag, Info } from "lucide-react";
 
 const categories = [
   { id: "transport", label: "Transportation", icon: Car },
@@ -68,7 +68,7 @@ const Calculator = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       {/* Hero */}
       <section className="pt-32 pb-16 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
@@ -85,6 +85,77 @@ const Calculator = () => {
         </div>
       </section>
 
+      {/* Info Section */}
+      <section className="px-6 md:px-12 pb-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 lg:p-8 flex gap-4 items-start">
+            <Info className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+            <div>
+              <h3 className="font-display text-lg font-bold mb-3 text-foreground">How this Calculator Works</h3>
+              <p className="text-muted-foreground text-sm mb-4 leading-relaxed">
+                This tool breaks down carbon emissions into identifiable, everyday actions to help you understand personal or organizational impact. Select a category from the left menu (e.g., Transportation) and enter your weekly/monthly data. Click "Calculate Emissions" to see your annual carbon footprint generated in tons of CO₂ equivalent (CO₂e).
+              </p>
+
+              <div className="bg-background rounded-md p-4 border border-border">
+                <h4 className="text-xs font-bold text-foreground mb-4 uppercase tracking-wide border-b border-border pb-2">Data Sources & Methodology</h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-xs text-muted-foreground">
+                  <div>
+                    <h5 className="font-semibold text-foreground mb-1">Transportation</h5>
+                    <ul className="space-y-1">
+                      <li>
+                        <span className="font-medium text-foreground">Car:</span> Miles/wk × 0.4 kg CO₂e × 52w
+                        <p className="text-[10px] mt-0.5 opacity-80">Based on <a href="https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle" target="_blank" rel="noreferrer" className="text-primary hover:underline">EPA passenger vehicle average</a> (400g/mile).</p>
+                      </li>
+                      <li>
+                        <span className="font-medium text-foreground">Transit:</span> Trips/wk × 0.1 kg CO₂e × 52w
+                        <p className="text-[10px] mt-0.5 opacity-80">Aggregated from <a href="https://www.apta.com/research-technical-resources/research-reports/public-transportations-role-in-responding-to-climate-change/" target="_blank" rel="noreferrer" className="text-primary hover:underline">APTA public transit data</a>.</p>
+                      </li>
+                      <li>
+                        <span className="font-medium text-foreground">Flights:</span> Hours/yr × 250 kg CO₂e
+                        <p className="text-[10px] mt-0.5 opacity-80">Factoring radiative forcing per <a href="https://theicct.org/aviation-emissions-data-and-analysis/" target="_blank" rel="noreferrer" className="text-primary hover:underline">ICCT aviation research</a>.</p>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h5 className="font-semibold text-foreground mb-1">Energy & Housing</h5>
+                    <ul className="space-y-1">
+                      <li>
+                        <span className="font-medium text-foreground">Electricity:</span> kWh/mo × 0.42 kg CO₂e × 12m
+                        <p className="text-[10px] mt-0.5 opacity-80">Standard national grid average via <a href="https://www.epa.gov/egrid" target="_blank" rel="noreferrer" className="text-primary hover:underline">EPA eGRID</a>.</p>
+                      </li>
+                      <li>
+                        <span className="font-medium text-foreground">Gas:</span> Therms/mo × 5.3 kg CO₂e × 12m
+                        <p className="text-[10px] mt-0.5 opacity-80">Direct physical conversion factor (<a href="https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references" target="_blank" rel="noreferrer" className="text-primary hover:underline">EPA standard</a>).</p>
+                      </li>
+                      <li>
+                        <span className="font-medium text-foreground">Housing:</span> Sq ft × 0.5 kg CO₂e
+                        <p className="text-[10px] mt-0.5 opacity-80">Rough proxy for embodied carbon & baseline load.</p>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h5 className="font-semibold text-foreground mb-1">Lifestyle</h5>
+                    <ul className="space-y-1">
+                      <li>
+                        <span className="font-medium text-foreground">Food:</span> Meat meals/wk × 3 kg CO₂e × 52w
+                        <p className="text-[10px] mt-0.5 opacity-80">High-meat vs plant-based impact per <a href="https://ourworldindata.org/environmental-impacts-of-food" target="_blank" rel="noreferrer" className="text-primary hover:underline">Our World in Data</a>.</p>
+                      </li>
+                      <li>
+                        <span className="font-medium text-foreground">Shopping:</span> Spend $/mo × 0.02 kg CO₂e × 12m
+                        <p className="text-[10px] mt-0.5 opacity-80">Economic input-output proxy (0.02kg per $1 in retail supply chain).</p>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Calculator */}
       <section className="section-padding bg-muted">
         <div className="max-w-7xl mx-auto">
@@ -97,11 +168,10 @@ const Calculator = () => {
                   <button
                     key={cat.id}
                     onClick={() => setActiveTab(cat.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-4 text-left transition-colors ${
-                      activeTab === cat.id
-                        ? "bg-foreground text-background"
-                        : "bg-background text-foreground hover:bg-secondary"
-                    }`}
+                    className={`w-full flex items-center gap-3 px-4 py-4 text-left transition-colors ${activeTab === cat.id
+                      ? "bg-foreground text-background"
+                      : "bg-background text-foreground hover:bg-secondary"
+                      }`}
                   >
                     <cat.icon className="w-5 h-5" />
                     <span className="font-medium">{cat.label}</span>
@@ -113,7 +183,7 @@ const Calculator = () => {
             {/* Input Fields */}
             <div className="lg:col-span-1 bg-background p-8 border border-border">
               <h2 className="font-display text-xl font-bold mb-6">Enter Data</h2>
-              
+
               {activeTab === "transport" && (
                 <div className="space-y-6">
                   <div>
@@ -236,7 +306,7 @@ const Calculator = () => {
             {/* Results */}
             <div className="lg:col-span-1 bg-background p-8 border border-border">
               <h2 className="font-display text-xl font-bold mb-6">Your Footprint</h2>
-              
+
               {!showResults ? (
                 <div className="h-64 flex items-center justify-center text-muted-foreground text-center">
                   <p>Fill in your data across categories and click "Calculate Emissions"</p>
@@ -270,7 +340,7 @@ const Calculator = () => {
 
                   <div className="p-4 border border-border">
                     <p className="text-sm text-muted-foreground">
-                      The average person emits about <strong className="text-foreground">4-8 tons</strong> of CO₂e annually. 
+                      The average person emits about <strong className="text-foreground">4-8 tons</strong> of CO₂e annually.
                       To meet the 1.5°C target, this needs to drop to <strong className="text-foreground">2 tons</strong>.
                     </p>
                   </div>

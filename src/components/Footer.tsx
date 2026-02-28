@@ -26,7 +26,6 @@ const Footer = () => {
             <ul className="space-y-3">
               {[
                 { name: "Features", path: "/features" },
-                { name: "Gap Analyzer", path: "/gap-analyzer" },
                 { name: "Carbon Calculator", path: "/calculator" },
                 { name: "Journalism Hub", path: "/journalism" },
               ].map((link) => (
@@ -77,13 +76,7 @@ const Footer = () => {
                 <span>Global Initiative</span>
               </li>
             </ul>
-            <Link
-              to="/gap-analyzer"
-              className="inline-flex items-center gap-2 mt-8 px-6 py-3 bg-background text-foreground text-sm font-semibold hover:bg-background/90 transition-colors"
-            >
-              Start Analyzing
-              <ArrowUpRight className="w-4 h-4" />
-            </Link>
+
           </div>
         </div>
 
@@ -94,10 +87,10 @@ const Footer = () => {
               © 2026 GreenLens. All rights reserved.
             </p>
             <div className="flex gap-6">
-              <Link to="#" className="text-background/50 hover:text-background text-sm transition-colors">
+              <Link to="/privacy-policy" className="text-background/50 hover:text-background text-sm transition-colors">
                 Privacy Policy
               </Link>
-              <Link to="#" className="text-background/50 hover:text-background text-sm transition-colors">
+              <Link to="/terms-of-service" className="text-background/50 hover:text-background text-sm transition-colors">
                 Terms of Service
               </Link>
             </div>

@@ -14,7 +14,7 @@ const About = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       {/* Hero */}
       <section className="pt-32 pb-16 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
@@ -140,7 +140,6 @@ const About = () => {
             {[
               "Live GreenLens web platform",
               "Individual and organizational carbon calculators",
-              "Sustainability Gap Analyzer engine",
               "Report generation system (PDF)",
               "Green journalism content hub",
               "Pilot impact and transparency report",
@@ -167,7 +166,7 @@ const About = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              to="/gap-analyzer"
+              to="/calculator"
               className="btn-squared-primary inline-flex items-center justify-center gap-2"
             >
               Try the Platform

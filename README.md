@@ -1,73 +1,54 @@
-# Welcome to your Lovable project
+# GreenLens: A Sustainability Gap Analyzer for Transparent Climate Action
 
-## Project info
+GreenLens is a web-based sustainability analytics and accountability platform that combines carbon accounting, sustainability gap analysis, and data-backed green journalism.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 1. Problem Statement
+Despite growing awareness of climate change, most individuals and organizations lack clear, trustworthy tools to measure real carbon emissions and verify sustainability claims.
+According to the UNEP Emissions Gap Report 2023, global greenhouse gas emissions must fall by 42% by 2030 to meet the 1.5°C target, yet emissions continue to rise due to weak monitoring and accountability. At the same time, the OECD Greenwashing Report 2022 highlights that over 40% of sustainability claims made by organizations are misleading, exaggerated, or unverifiable, eroding public trust.
 
-## How can I edit this code?
+Current challenges include:
+- Fragmented carbon calculators with limited scope
+- No clear comparison between sustainability claims and actual data
+- Lack of accessible tools for schools, students, and journalists
+- Poor environmental literacy at the grassroots level
 
-There are several ways of editing your application.
+## 2. Unique Solution
+GreenLens transforms sustainability from claims-based marketing into measurable, auditable action.
+Key innovations include:
+- **Multi-Level Carbon Tracking**: Emissions measured at appliance, machine, department, organizational, and individual levels.
+- **Sustainability Gap Analyzer**: Direct comparison between declared sustainability or net-zero claims and real emission data, producing a clear Sustainability Gap Score.
+- **AI-Guided Reduction Insights**: Rule-based recommendations to reduce emissions through optimization, efficiency, and alternatives.
+- **Transparency Through Storytelling**: Integrated green journalism tools that convert data into public-facing narratives.
+- **Education-First Design**: Carbon literacy modules for students, educators, and NGOs.
 
-**Use Lovable**
+## 3. Visual Concepts
+- **Dashboard**: Emission summaries with trend graphs.
+- **Tracking Modules**: Appliance/machine input with visual icons.
+- **Gap Analyzer Screen**: Claim vs reality comparison with color-coded risk levels.
+- **Leaderboard Views**: Green School Index and organizational rankings.
+- **Journalism Hub**: Articles supported by live platform data.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 4. Deliverables
+- Live GreenLens web platform
+- Individual and organizational carbon calculators
+- Sustainability Gap Analyzer engine
+- Report generation system (PDF)
+- Green journalism content hub
+- Pilot impact and transparency report
 
-Changes made via Lovable will be committed automatically to this repo.
+## 5. Technology Stack
+Built with modern technologies for a premium, fast, and responsive experience:
+- **React** (Vite)
+- **TypeScript**
+- **Tailwind CSS**
+- **shadcn/ui**
+- **Recharts** (Data Visualization)
+- **Lucide React** (Icons)
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
+## 6. Development
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
+# Follow these steps:
 npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

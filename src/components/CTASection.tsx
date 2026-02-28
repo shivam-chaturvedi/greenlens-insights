@@ -16,10 +16,10 @@ const CTASection = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              to="/gap-analyzer"
+              to="/calculator"
               className="btn-squared-primary inline-flex items-center justify-center gap-2 text-base"
             >
-              Start Gap Analysis
+              Start Calculating
               <ArrowUpRight className="w-4 h-4" />
             </Link>
             <Link

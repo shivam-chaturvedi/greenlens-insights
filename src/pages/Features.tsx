@@ -11,12 +11,7 @@ const features = [
     description: "Measure emissions at appliance, machine, department, organizational, and individual levels. Get complete visibility into your carbon footprint with granular data that matters.",
     highlights: ["Appliance-level tracking", "Department aggregation", "Organizational totals"],
   },
-  {
-    icon: Target,
-    title: "Sustainability Gap Analyzer",
-    description: "Compare declared sustainability or net-zero claims against real emission data. Our Gap Score reveals the truth behind marketing promises.",
-    highlights: ["Claim verification", "Gap scoring", "Risk assessment"],
-  },
+
   {
     icon: Shield,
     title: "AI-Guided Reduction Insights",
@@ -41,25 +36,14 @@ const features = [
     description: "Track and compare sustainability efforts across institutions. Transparent leaderboards drive healthy competition for improvement.",
     highlights: ["Green School Index", "Org rankings", "Benchmarking"],
   },
-  {
-    icon: Zap,
-    title: "Real-Time Analytics",
-    description: "No more static reports. Get interactive, real-time analytics that update as your data changes. Monitor trends as they happen.",
-    highlights: ["Live dashboards", "Trend analysis", "Instant updates"],
-  },
-  {
-    icon: FileText,
-    title: "Report Generation",
-    description: "Generate professional PDF reports for stakeholders, board meetings, and regulatory compliance. Export verified data instantly.",
-    highlights: ["PDF exports", "Custom branding", "Compliance ready"],
-  },
+
 ];
 
 const Features = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       {/* Hero */}
       <section className="pt-32 pb-20 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
@@ -117,13 +101,13 @@ const Features = () => {
             Ready to get started?
           </h2>
           <p className="text-muted-foreground text-lg mb-10">
-            Start analyzing your sustainability gap today and take the first step toward verified climate action.
+            Start calculating your emissions today and take the first step toward verified climate action.
           </p>
           <Link
-            to="/gap-analyzer"
+            to="/calculator"
             className="btn-squared-primary inline-flex items-center gap-2"
           >
-            Launch Gap Analyzer
+            Launch Calculator
             <ArrowUpRight className="w-4 h-4" />
           </Link>
         </div>

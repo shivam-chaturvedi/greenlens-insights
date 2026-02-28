@@ -4,7 +4,7 @@ import { Menu, X, ArrowUpRight } from "lucide-react";
 
 const navLinks = [
   { name: "FEATURES", path: "/features" },
-  { name: "GAP ANALYZER", path: "/gap-analyzer" },
+  { name: "COMMUNITY", path: "/community" },
   { name: "CALCULATOR", path: "/calculator" },
   { name: "JOURNALISM HUB", path: "/journalism" },
   { name: "ABOUT", path: "/about" },
@@ -27,11 +27,10 @@ const Navbar = () => {
             </Link>
             <Link
               to="/"
-              className={`hidden md:flex btn-squared text-sm tracking-wide ${
-                isActive("/")
-                  ? "bg-foreground text-background"
-                  : "bg-transparent text-foreground hover:bg-muted"
-              }`}
+              className={`hidden md:flex btn-squared text-sm tracking-wide ${isActive("/")
+                ? "bg-foreground text-background"
+                : "bg-transparent text-foreground hover:bg-muted"
+                }`}
             >
               HOME
             </Link>
@@ -43,11 +42,10 @@ const Navbar = () => {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-4 py-2 text-sm font-medium tracking-wide transition-colors ${
-                  isActive(link.path)
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`px-4 py-2 text-sm font-medium tracking-wide transition-colors ${isActive(link.path)
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 {link.name}
               </Link>
@@ -57,7 +55,7 @@ const Navbar = () => {
           {/* CTA Button */}
           <div className="hidden md:flex items-center">
             <Link
-              to="/gap-analyzer"
+              to="/calculator"
               className="btn-squared-outline flex items-center gap-2 text-sm"
             >
               GET STARTED
@@ -83,9 +81,8 @@ const Navbar = () => {
             <Link
               to="/"
               onClick={() => setIsOpen(false)}
-              className={`block py-3 text-sm font-medium tracking-wide ${
-                isActive("/") ? "text-primary" : "text-foreground"
-              }`}
+              className={`block py-3 text-sm font-medium tracking-wide ${isActive("/") ? "text-primary" : "text-foreground"
+                }`}
             >
               HOME
             </Link>
@@ -94,15 +91,14 @@ const Navbar = () => {
                 key={link.path}
                 to={link.path}
                 onClick={() => setIsOpen(false)}
-                className={`block py-3 text-sm font-medium tracking-wide ${
-                  isActive(link.path) ? "text-primary" : "text-foreground"
-                }`}
+                className={`block py-3 text-sm font-medium tracking-wide ${isActive(link.path) ? "text-primary" : "text-foreground"
+                  }`}
               >
                 {link.name}
               </Link>
             ))}
             <Link
-              to="/gap-analyzer"
+              to="/calculator"
               onClick={() => setIsOpen(false)}
               className="btn-squared-outline inline-flex items-center gap-2 text-sm mt-4"
             >

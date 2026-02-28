@@ -22,10 +22,10 @@ const Hero = () => {
           {/* CTA Button */}
           <div className="animate-fade-in" style={{ animationDelay: "0.4s" }}>
             <Link
-              to="/gap-analyzer"
+              to="/calculator"
               className="btn-squared-outline inline-flex items-center gap-3 text-base md:text-lg px-8 py-4"
             >
-              Analyze Sustainability Gap
+              Start Calculating
               <ArrowUpRight className="w-5 h-5" />
             </Link>
           </div>
