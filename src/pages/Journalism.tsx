@@ -167,9 +167,12 @@ const Journalism = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
             {filteredArticles.map((article) => (
-              <article
+              <Link
                 key={article.id}
-                className="bg-background group cursor-pointer"
+                to={`/journalism/${article.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-background group cursor-pointer block"
               >
                 <div className="aspect-video overflow-hidden">
                   <img
@@ -202,7 +205,7 @@ const Journalism = () => {
                     <span>{article.readTime}</span>
                   </div>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
 

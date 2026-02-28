@@ -99,53 +99,95 @@ const Calculator = () => {
               <div className="bg-background rounded-md p-4 border border-border">
                 <h4 className="text-xs font-bold text-foreground mb-4 uppercase tracking-wide border-b border-border pb-2">Data Sources & Methodology</h4>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-xs text-muted-foreground">
-                  <div>
-                    <h5 className="font-semibold text-foreground mb-1">Transportation</h5>
-                    <ul className="space-y-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+                  {/* Transportation Card */}
+                  <div className="bg-background/50 backdrop-blur-sm p-6 border border-border group hover:border-primary/30 transition-all duration-300">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-primary/10 text-primary">
+                        <Car className="w-4 h-4" />
+                      </div>
+                      <h5 className="font-display font-bold text-foreground">Transportation</h5>
+                    </div>
+                    <ul className="space-y-4">
                       <li>
-                        <span className="font-medium text-foreground">Car:</span> Miles/wk × 0.4 kg CO₂e × 52w
-                        <p className="text-[10px] mt-0.5 opacity-80">Based on <a href="https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle" target="_blank" rel="noreferrer" className="text-primary hover:underline">EPA passenger vehicle average</a> (400g/mile).</p>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Car Travel</p>
+                        <p className="text-sm text-foreground font-medium mb-1">Miles/wk × 0.4 kg CO₂e × 52w</p>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground italic bg-muted/30 p-2 border-l-2 border-primary/20">
+                          Based on the <a href="https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle" target="_blank" rel="noreferrer" className="text-primary font-bold hover:underline decoration-primary/30 underline-offset-2">EPA passenger vehicle average</a> (400g/mile).
+                        </p>
                       </li>
                       <li>
-                        <span className="font-medium text-foreground">Transit:</span> Trips/wk × 0.1 kg CO₂e × 52w
-                        <p className="text-[10px] mt-0.5 opacity-80">Aggregated from <a href="https://www.apta.com/research-technical-resources/research-reports/public-transportations-role-in-responding-to-climate-change/" target="_blank" rel="noreferrer" className="text-primary hover:underline">APTA public transit data</a>.</p>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Public Transit</p>
+                        <p className="text-sm text-foreground font-medium mb-1">Trips/wk × 0.1 kg CO₂e × 52w</p>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground italic bg-muted/30 p-2 border-l-2 border-primary/20">
+                          Aggregated from <a href="https://www.apta.com/research-technical-resources/research-reports/public-transportations-role-in-responding-to-climate-change/" target="_blank" rel="noreferrer" className="text-primary font-bold hover:underline decoration-primary/30 underline-offset-2">APTA public transit data</a>.
+                        </p>
                       </li>
                       <li>
-                        <span className="font-medium text-foreground">Flights:</span> Hours/yr × 250 kg CO₂e
-                        <p className="text-[10px] mt-0.5 opacity-80">Factoring radiative forcing per <a href="https://theicct.org/aviation-emissions-data-and-analysis/" target="_blank" rel="noreferrer" className="text-primary hover:underline">ICCT aviation research</a>.</p>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h5 className="font-semibold text-foreground mb-1">Energy & Housing</h5>
-                    <ul className="space-y-1">
-                      <li>
-                        <span className="font-medium text-foreground">Electricity:</span> kWh/mo × 0.42 kg CO₂e × 12m
-                        <p className="text-[10px] mt-0.5 opacity-80">Standard national grid average via <a href="https://www.epa.gov/egrid" target="_blank" rel="noreferrer" className="text-primary hover:underline">EPA eGRID</a>.</p>
-                      </li>
-                      <li>
-                        <span className="font-medium text-foreground">Gas:</span> Therms/mo × 5.3 kg CO₂e × 12m
-                        <p className="text-[10px] mt-0.5 opacity-80">Direct physical conversion factor (<a href="https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references" target="_blank" rel="noreferrer" className="text-primary hover:underline">EPA standard</a>).</p>
-                      </li>
-                      <li>
-                        <span className="font-medium text-foreground">Housing:</span> Sq ft × 0.5 kg CO₂e
-                        <p className="text-[10px] mt-0.5 opacity-80">Rough proxy for embodied carbon & baseline load.</p>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Flights</p>
+                        <p className="text-sm text-foreground font-medium mb-1">Hours/yr × 250 kg CO₂e</p>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground italic bg-muted/30 p-2 border-l-2 border-primary/20">
+                          Factoring radiative forcing per <a href="https://theicct.org/aviation-emissions-data-and-analysis/" target="_blank" rel="noreferrer" className="text-primary font-bold hover:underline decoration-primary/30 underline-offset-2">ICCT aviation research</a>.
+                        </p>
                       </li>
                     </ul>
                   </div>
 
-                  <div>
-                    <h5 className="font-semibold text-foreground mb-1">Lifestyle</h5>
-                    <ul className="space-y-1">
+                  {/* Energy Card */}
+                  <div className="bg-background/50 backdrop-blur-sm p-6 border border-border group hover:border-primary/30 transition-all duration-300">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-primary/10 text-primary">
+                        <Zap className="w-4 h-4" />
+                      </div>
+                      <h5 className="font-display font-bold text-foreground">Energy & Housing</h5>
+                    </div>
+                    <ul className="space-y-4">
                       <li>
-                        <span className="font-medium text-foreground">Food:</span> Meat meals/wk × 3 kg CO₂e × 52w
-                        <p className="text-[10px] mt-0.5 opacity-80">High-meat vs plant-based impact per <a href="https://ourworldindata.org/environmental-impacts-of-food" target="_blank" rel="noreferrer" className="text-primary hover:underline">Our World in Data</a>.</p>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Electricity</p>
+                        <p className="text-sm text-foreground font-medium mb-1">kWh/mo × 0.42 kg CO₂e × 12m</p>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground italic bg-muted/30 p-2 border-l-2 border-primary/20">
+                          Standard national grid average via <a href="https://www.epa.gov/egrid" target="_blank" rel="noreferrer" className="text-primary font-bold hover:underline decoration-primary/30 underline-offset-2">EPA eGRID</a>.
+                        </p>
                       </li>
                       <li>
-                        <span className="font-medium text-foreground">Shopping:</span> Spend $/mo × 0.02 kg CO₂e × 12m
-                        <p className="text-[10px] mt-0.5 opacity-80">Economic input-output proxy (0.02kg per $1 in retail supply chain).</p>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Natural Gas</p>
+                        <p className="text-sm text-foreground font-medium mb-1">Therms/mo × 5.3 kg CO₂e × 12m</p>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground italic bg-muted/30 p-2 border-l-2 border-primary/20">
+                          Direct physical conversion factor (<a href="https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references" target="_blank" rel="noreferrer" className="text-primary font-bold hover:underline decoration-primary/30 underline-offset-2">EPA standard</a>).
+                        </p>
+                      </li>
+                      <li>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Housing Size</p>
+                        <p className="text-sm text-foreground font-medium mb-1">Sq ft × 0.5 kg CO₂e</p>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground italic bg-muted/30 p-2 border-l-2 border-primary/20">
+                          Rough proxy for embodied carbon & baseline load.
+                        </p>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Lifestyle Card */}
+                  <div className="bg-background/50 backdrop-blur-sm p-6 border border-border group hover:border-primary/30 transition-all duration-300">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-primary/10 text-primary">
+                        <Utensils className="w-4 h-4" />
+                      </div>
+                      <h5 className="font-display font-bold text-foreground">Lifestyle & Goods</h5>
+                    </div>
+                    <ul className="space-y-4">
+                      <li>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Dietary Impact</p>
+                        <p className="text-sm text-foreground font-medium mb-1">Meat meals/wk × 3 kg CO₂e × 52w</p>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground italic bg-muted/30 p-2 border-l-2 border-primary/20">
+                          High-meat vs plant-based impact per <a href="https://ourworldindata.org/environmental-impacts-of-food" target="_blank" rel="noreferrer" className="text-primary font-bold hover:underline decoration-primary/30 underline-offset-2">Our World in Data</a>.
+                        </p>
+                      </li>
+                      <li>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Retail Supply Chain</p>
+                        <p className="text-sm text-foreground font-medium mb-1">Spend $/mo × 0.02 kg CO₂e × 12m</p>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground italic bg-muted/30 p-2 border-l-2 border-primary/20">
+                          Economic input-output proxy (0.02kg per $1 spend).
+                        </p>
                       </li>
                     </ul>
                   </div>
