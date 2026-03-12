@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Features from "./pages/Features";
 import Community from "./pages/Community";
+import Profile from "./pages/Profile";
+import AuthPage from "./pages/Auth";
 import Calculator from "./pages/Calculator";
 import Journalism from "./pages/Journalism";
 import About from "./pages/About";
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/features" element={<Features />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/community/profile/:username" element={<Profile />} />
+          <Route path="/auth" element={<AuthPage />} />
           <Route path="/calculator" element={<Calculator />} />
           <Route path="/journalism" element={<Journalism />} />
           <Route path="/about" element={<About />} />

@@ -1,6 +1,9 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { supabase } from "@/lib/supabaseClient";
+import { useSupabaseSession } from "@/hooks/useSupabaseSession";
+import { useToast } from "@/hooks/use-toast";
 import { ArrowUpRight, Car, Zap, Plane, Home, Utensils, ShoppingBag, Info } from "lucide-react";
 
 const categories = [
@@ -13,6 +16,9 @@ const categories = [
 ];
 
 const Calculator = () => {
+  const { session } = useSupabaseSession();
+  const { toast } = useToast();
+  const [savingHistory, setSavingHistory] = useState(false);
   const [activeTab, setActiveTab] = useState("transport");
   const [values, setValues] = useState({
     carMiles: "",
@@ -30,8 +36,89 @@ const Calculator = () => {
     setValues((prev) => ({ ...prev, [field]: value }));
   };
 
-  const calculateEmissions = () => {
+  const saveCalculatorHistory = async () => {
+    if (!session) {
+      toast({
+        title: "Sign in to save",
+        description: "Log in to keep this snapshot on your GreenLens profile.",
+      });
+      return;
+    }
+
+    setSavingHistory(true);
+    try {
+      const normalizedValues = Object.entries(values).reduce<Record<string, number>>((acc, [key, value]) => {
+        acc[key] = Number.parseFloat(value) || 0;
+        return acc;
+      }, {});
+
+      const detailBreakdown = breakdown.map((entry) => ({
+        name: entry.name,
+        value: Number(entry.value.toFixed(3)),
+      }));
+
+      const { error: profileError } = await supabase.from("profiles").upsert(
+        {
+          user_id: session.user.id,
+        full_name: session.user.user_metadata?.full_name || session.user.email,
+        role: session.user.user_metadata?.role || "community_user",
+      },
+      { onConflict: "user_id" },
+    );
+
+    if (profileError) {
+      throw profileError;
+    }
+
+    const latestResponse = await supabase
+      .from("calculator_history")
+      .select("total_emissions")
+      .eq("user_id", session.user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+      if (latestResponse.error) {
+        throw latestResponse.error;
+      }
+
+      const prevTotal =
+        latestResponse.data && latestResponse.data.total_emissions
+          ? Number(latestResponse.data.total_emissions)
+          : null;
+
+      const changePct =
+        prevTotal && prevTotal > 0 ? ((totalEmissions - prevTotal) / prevTotal) * 100 : null;
+
+      const categoryLabel = categories.find((cat) => cat.id === activeTab)?.label ?? "your inputs";
+
+      const { error } = await supabase.from("calculator_history").insert({
+        user_id: session.user.id,
+        title: "Personal footprint snapshot",
+        summary: `Annualized estimate based on ${categoryLabel}`,
+        impact: `${totalEmissions.toFixed(1)} tCO₂e annually`,
+        change_pct: changePct,
+        total_emissions: totalEmissions,
+        breakdown: detailBreakdown,
+        raw_data: normalizedValues,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({ title: "Calculation saved", description: "It will appear under your profile history." });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to save the calculation.";
+      toast({ title: "Save failed", description: message, variant: "destructive" });
+    } finally {
+      setSavingHistory(false);
+    }
+  };
+
+  const calculateEmissions = async () => {
     setShowResults(true);
+    await saveCalculatorHistory();
   };
 
   // Simplified calculation factors (kg CO2e)
@@ -339,8 +426,9 @@ const Calculator = () => {
               <button
                 onClick={calculateEmissions}
                 className="w-full btn-squared-primary flex items-center justify-center gap-2 mt-8"
+                disabled={savingHistory}
               >
-                Calculate Emissions
+                {savingHistory ? "Saving..." : "Calculate Emissions"}
                 <ArrowUpRight className="w-4 h-4" />
               </button>
             </div>

@@ -1,6 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { useState } from "react";
-import { Menu, X, ArrowUpRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Menu, X, UserCircle2 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+import { useToast } from "@/hooks/use-toast";
+import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 
 const navLinks = [
   { name: "FEATURES", path: "/features" },
@@ -12,9 +15,36 @@ const navLinks = [
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const toast = useToast();
+  const { session } = useSupabaseSession();
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({ title: "Signed out", description: "You can log back in via the navigation links.", variant: "default" });
+    setMenuOpen(false);
+  };
+
+  const currentDisplay =
+    session?.user.user_metadata?.full_name?.trim() ||
+    session?.user.user_metadata?.preferred_username ||
+    session?.user.email ||
+    "GreenLens user";
+  const profileSlug = encodeURIComponent(currentDisplay);
+  const profilePath = `/community/profile/${profileSlug}`;
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border">
@@ -53,14 +83,52 @@ const Navbar = () => {
           </div>
 
           {/* CTA Button */}
-          <div className="hidden md:flex items-center">
-            <Link
-              to="/calculator"
-              className="btn-squared-outline flex items-center gap-2 text-sm"
-            >
-              GET STARTED
-              <ArrowUpRight className="w-4 h-4" />
-            </Link>
+          <div className="hidden md:flex items-center gap-2 relative" ref={containerRef}>
+            {!session ? (
+              <>
+                <Link
+                  to="/auth?mode=login"
+                  className="btn-squared-outline px-5 py-3 text-sm"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/auth?mode=signup"
+                  className="btn-squared-outline px-5 py-3 text-sm"
+                >
+                  Sign Up
+                </Link>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen((prev) => !prev)}
+                  className="flex items-center justify-center w-10 h-10 rounded-full border border-border text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  <UserCircle2 className="w-5 h-5" />
+                  <span className="sr-only">Open profile menu</span>
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-44 rounded-2xl border border-border bg-background shadow-lg overflow-hidden z-20">
+                    <Link
+                      to={profilePath}
+                      className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm font-medium text-destructive hover:bg-muted/50 transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -97,14 +165,45 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
-            <Link
-              to="/calculator"
-              onClick={() => setIsOpen(false)}
-              className="btn-squared-outline inline-flex items-center gap-2 text-sm mt-4"
-            >
-              GET STARTED
-              <ArrowUpRight className="w-4 h-4" />
-            </Link>
+            <div className="flex flex-col gap-2 mt-4">
+              {!session ? (
+                <>
+                  <Link
+                    to="/auth?mode=login"
+                    onClick={() => setIsOpen(false)}
+                    className="btn-squared-outline inline-flex justify-center text-sm"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/auth?mode=signup"
+                    onClick={() => setIsOpen(false)}
+                    className="btn-squared-outline inline-flex justify-center text-sm"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to={profilePath}
+                    onClick={() => setIsOpen(false)}
+                    className="btn-squared-outline inline-flex justify-center text-sm"
+                  >
+                    Profile
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setIsOpen(false);
+                      handleLogout();
+                    }}
+                    className="btn-squared-outline inline-flex justify-center text-sm"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

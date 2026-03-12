@@ -26,7 +26,29 @@ const About = () => {
             <span className="highlight-box">action</span>
           </h1>
           <p className="text-muted-foreground text-xl max-w-3xl">
-            GreenLens is a web-based sustainability analytics and accountability platform that transforms sustainability from claims-based marketing into measurable, auditable action.
+            GreenLens began with Save Money Reduce Emissions (SMRE) as proof that sustainability can be framed as opportunity and growth—not loss.{" "}
+            SMRE made action as easy as the click of a button for busy households, clarifying the available resources and government efforts that help people save money while emitting less.
+          </p>
+        </div>
+      </section>
+
+      {/* Journey & Purpose */}
+      <section className="section-padding bg-primary-foreground/5 border-t border-primary-foreground/10">
+        <div className="max-w-5xl mx-auto space-y-6">
+          <p className="text-sm font-medium tracking-widest text-muted-foreground">
+            MY STORY
+          </p>
+          <h2 className="font-display text-4xl md:text-5xl font-bold">
+            My journey and purpose behind GreenLens & SMRE
+          </h2>
+          <p className="text-muted-foreground text-lg leading-relaxed">
+            Save Money Reduce Emissions was born from a desire to reframe climate work as tangible growth. It speaks to busy, stressed households by offering clear, direct routes to positive action, and it organizes the government, state, and local resources so people can see what to do next. The project is deeply personal because it highlights government action, improves everyday lives, and builds the bridge between scientists, activists, economists, and the public by showing that climate action brings long-term growth and positivity.
+          </p>
+          <p className="text-muted-foreground text-lg leading-relaxed">
+            Combining my love for the beach and nature, my perspective as an FCPS student witnessing the policy conversations around me, and experience in journalism and the art of rhetoric, GreenLens became the continuation of SMRE: an action-focused platform that spotlights community collaboration, local opportunities, and the innovation happening all around us.
+          </p>
+          <p className="text-muted-foreground text-lg leading-relaxed">
+            This project is about action. It highlights beneficial collaborations with government, state departments, and local agencies, while making it clear how you, your neighbors, and your city can act now instead of remaining stuck in negativity.
           </p>
         </div>
       </section>
@@ -49,7 +71,7 @@ const About = () => {
                 The OECD Greenwashing Report 2022 highlights that over 40% of sustainability claims made by organizations are misleading, exaggerated, or unverifiable, eroding public trust.
               </p>
             </div>
-            <div className="space-y-6">
+              <div className="space-y-6">
               {[
                 { icon: Target, title: "Fragmented calculators", desc: "Limited scope, individual-only focus" },
                 { icon: Users, title: "No claim verification", desc: "Marketing claims go unchecked" },
@@ -94,12 +116,47 @@ const About = () => {
                 ))}
               </div>
             </div>
-            <div className="order-1 lg:order-2 bg-muted p-12 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-32 h-32 bg-primary/10 mx-auto mb-6 flex items-center justify-center">
-                  <span className="font-display text-4xl font-bold text-primary">AP</span>
+              <div className="order-1 lg:order-2 bg-muted p-12 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-32 h-32 bg-primary/10 mx-auto mb-6 flex items-center justify-center">
+                    <span className="font-display text-4xl font-bold text-primary">AP</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Scholar & Developer</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Founder of Save Money Reduce Emissions & GreenLens
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground">Scholar & Developer</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      {/* Action Focus */}
+      <section className="section-padding bg-background">
+        <div className="max-w-7xl mx-auto grid gap-8 md:grid-cols-2">
+          <div className="space-y-4">
+            <h2 className="font-display text-3xl font-bold">Action, the GreenLens focus</h2>
+            <p className="text-muted-foreground leading-relaxed text-lg">
+              Climate change may be a bipartisan threat, but taking action towards greener, cleaner, safer communities unites people. GreenLens and Save Money Reduce Emissions (<a href="https://savemoneyreduceemissions.com/" target="_blank" rel="noreferrer" className="text-primary underline">savemoneyreduceemissions.com</a>) highlight the work happening across government and community, then show you how to contribute, volunteer, and give back for your own mental health, rather than just soaking in statistics.
+            </p>
+            <p className="text-muted-foreground leading-relaxed text-lg">
+              GreenLens highlights opportunities with government, state, and local agencies, then connects you directly through stories, updates, and data so you can step in, stay motivated, and move from awareness to impact.
+            </p>
+          </div>
+          <div className="space-y-4">
+            <h3 className="font-display text-2xl font-bold">Who GreenLens serves</h3>
+            <div className="grid gap-4">
+              <div className="border border-border rounded-lg p-4">
+                <p className="text-sm uppercase tracking-widest text-muted-foreground">For students</p>
+                <p className="text-foreground/80 text-lg">
+                  A resource for finding volunteer hours, tracking the latest innovation, and sharing climate stories with peers and mentors.
+                </p>
+              </div>
+              <div className="border border-border rounded-lg p-4">
+                <p className="text-sm uppercase tracking-widest text-muted-foreground">For adults</p>
+                <p className="text-foreground/80 text-lg">
+                  Clear guidance on how to act, give back, and plug into community efforts so the work improves your life instead of overwhelming you with statistics.
+                </p>
               </div>
             </div>
           </div>
