@@ -47,49 +47,6 @@ type ProfileRecord = {
   role: string | null;
 };
 
-const HistoryChart = ({ data }: { data: HistoryRow[] }) => {
-  const chartRows = data.filter((entry) => typeof entry.total_emissions === "number");
-
-  if (!chartRows.length) {
-    return (
-      <div className="h-32 flex items-center justify-center text-xs text-muted-foreground">
-        Run a few calculator sessions to unlock your impact timeline.
-      </div>
-    );
-  }
-
-  const displayRows = chartRows.slice(0, 8).reverse();
-  const highest = Math.max(...displayRows.map((entry) => entry.total_emissions ?? 0), 1);
-  const denominator = displayRows.length > 1 ? displayRows.length - 1 : 1;
-  const points = displayRows
-    .map((entry, index) => {
-      const x = Number(((index / denominator) * 100).toFixed(2));
-      const value = entry.total_emissions ?? 0;
-      const y = Number((100 - (value / highest) * 100).toFixed(2));
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  return (
-    <svg viewBox="0 0 100 100" className="w-full h-32">
-      <polyline
-        points={points}
-        fill="none"
-        stroke="#0f766e"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {displayRows.map((entry, index) => {
-        const x = Number(((index / denominator) * 100).toFixed(2));
-        const value = entry.total_emissions ?? 0;
-        const y = Number((100 - (value / highest) * 100).toFixed(2));
-        return <circle key={`${entry.id}-${index}`} cx={x} cy={y} r={1.8} fill="#14b8a6" />;
-      })}
-    </svg>
-  );
-};
-
 const Profile = () => {
   const { username } = useParams<{ username: string }>();
   const { session } = useSupabaseSession();
@@ -108,7 +65,6 @@ const Profile = () => {
   const [formValues, setFormValues] = useState({
     fullName: sessionName,
     organization: "",
-    role: "community_user",
     bio: "",
   });
   const [passwordValues, setPasswordValues] = useState({ password: "", confirm: "" });
@@ -149,7 +105,7 @@ const Profile = () => {
 
   const displayName = normalizedName || sessionName || "GreenLens member";
   const displayRole = isOwnProfile
-    ? profileRecord?.role || session?.user.user_metadata?.role || "Community Contributor"
+    ? profileRecord?.role || "Community Contributor"
     : "Community Member";
   const displayBio = isOwnProfile
     ? profileRecord?.bio || "Update your profile so the community knows your focus."
@@ -213,14 +169,12 @@ const Profile = () => {
           setFormValues({
             fullName: record.full_name || sessionName,
             organization: record.organization || "",
-            role: record.role || session?.user.user_metadata?.role || "community_user",
             bio: record.bio || "",
           });
         } else {
           setFormValues({
             fullName: sessionName,
             organization: "",
-            role: session?.user.user_metadata?.role || "community_user",
             bio: "",
           });
         }
@@ -259,17 +213,17 @@ const Profile = () => {
       setProfileLoading(false);
 
       if (!profileResult.data) {
-        const { error: upsertError } = await supabase.from("profiles").upsert(
-          {
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({
             user_id: session.user.id,
             full_name: sessionName,
-            role: session?.user.user_metadata?.role || "community_user",
-          },
-          { onConflict: "user_id" },
-        );
+          })
+          .onConflict("user_id")
+          .ignore();
 
-        if (upsertError) {
-          console.warn("Unable to seed profile row", upsertError.message);
+        if (insertError) {
+          console.warn("Unable to seed profile row", insertError.message);
         }
       }
     };
@@ -292,25 +246,26 @@ const Profile = () => {
     event.preventDefault();
     if (!session) return;
     setProfileSaving(true);
-    const payload = {
-      user_id: session.user.id,
+    const updates = {
       full_name: formValues.fullName || sessionName,
       organization: formValues.organization,
-      role: formValues.role || "community_user",
       bio: formValues.bio,
     };
-    const { error } = await supabase.from("profiles").upsert([payload], { onConflict: "user_id" });
+    const { error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("user_id", session.user.id);
     setProfileSaving(false);
     if (error) {
       toast({ title: "Profile update failed", description: error.message, variant: "destructive" });
       return;
     }
-    setProfileRecord({
-      fullName: payload.full_name,
-      organization: payload.organization,
-      bio: payload.bio,
-      role: payload.role,
-    });
+    setProfileRecord((prev) => ({
+      fullName: updates.full_name,
+      organization: updates.organization,
+      bio: updates.bio,
+      role: prev?.role ?? null,
+    }));
     toast({ title: "Profile saved", description: "Your GreenLens profile is up to date." });
   };
 
@@ -458,32 +413,25 @@ const Profile = () => {
               </div>
               {session && isOwnProfile ? (
                 <form className="space-y-3" onSubmit={handleProfileSubmit}>
-                  <div className="space-y-1 text-sm">
-                    <label className="font-medium text-foreground">Full name</label>
-                    <input
-                      type="text"
-                      value={formValues.fullName}
-                      onChange={(event) => setFormValues((prev) => ({ ...prev, fullName: event.target.value }))}
-                      className="w-full px-3 py-2 border border-border rounded-xl bg-background focus:outline-none focus:border-primary transition-colors"
-                    />
-                  </div>
-                  <div className="space-y-1 text-sm">
-                    <label className="font-medium text-foreground">Organization</label>
-                    <input
-                      type="text"
-                      value={formValues.organization}
-                      onChange={(event) => setFormValues((prev) => ({ ...prev, organization: event.target.value }))}
-                      className="w-full px-3 py-2 border border-border rounded-xl bg-background focus:outline-none focus:border-primary transition-colors"
-                    />
-                  </div>
-                  <div className="space-y-1 text-sm">
-                    <label className="font-medium text-foreground">Role / title</label>
-                    <input
-                      type="text"
-                      value={formValues.role}
-                      onChange={(event) => setFormValues((prev) => ({ ...prev, role: event.target.value }))}
-                      className="w-full px-3 py-2 border border-border rounded-xl bg-background focus:outline-none focus:border-primary transition-colors"
-                    />
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-1 text-sm">
+                      <label className="font-medium text-foreground">Organization</label>
+                      <input
+                        type="text"
+                        value={formValues.organization}
+                        onChange={(event) => setFormValues((prev) => ({ ...prev, organization: event.target.value }))}
+                        className="w-full px-3 py-2 border border-border rounded-xl bg-background focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <label className="font-medium text-foreground">Full name</label>
+                      <input
+                        type="text"
+                        value={formValues.fullName}
+                        onChange={(event) => setFormValues((prev) => ({ ...prev, fullName: event.target.value }))}
+                        className="w-full px-3 py-2 border border-border rounded-xl bg-background focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-1 text-sm">
                     <label className="font-medium text-foreground">Short bio</label>
@@ -691,44 +639,38 @@ const Profile = () => {
               {calculationEntries.length} entr{calculationEntries.length === 1 ? "y" : "ies"}
             </span>
           </div>
-          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="space-y-5">
-              <HistoryChart data={calculationEntries} />
-              <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-                <div className="rounded-2xl border border-border p-3 text-center">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-[0.3em] mb-1">Latest variance</p>
-                  <p
-                    className={`text-xl font-semibold ${
-                      latestChange === null ? "text-foreground" : latestChange > 0 ? "text-destructive" : "text-emerald-500"
-                    }`}
-                  >
-                    {latestChange === null ? "—" : `${latestChange > 0 ? "+" : ""}${latestChange.toFixed(1)}%`}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-border p-3 text-center">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-[0.3em] mb-1">Average change</p>
-                  <p className="text-xl font-semibold text-foreground">
-                    {averageChange === null ? "—" : `${averageChange > 0 ? "+" : ""}${averageChange.toFixed(1)}%`}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-border p-3 text-center">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-[0.3em] mb-1">Latest total</p>
-                  <p className="text-xl font-semibold text-foreground">
-                    {latestTotalEmissions === null ? "—" : `${latestTotalEmissions.toFixed(1)}t`}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-border p-3 text-center">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-[0.3em] mb-1">Highest total</p>
-                  <p className="text-xl font-semibold text-foreground">
-                    {highestTotalEmissions === 0 ? "—" : `${highestTotalEmissions.toFixed(1)}t`}
-                  </p>
-                </div>
+          <div className="space-y-5">
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+              <div className="rounded-2xl border border-border p-3 text-center">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.3em] mb-1">Latest variance</p>
+                <p
+                  className={`text-xl font-semibold ${
+                    latestChange === null ? "text-foreground" : latestChange > 0 ? "text-destructive" : "text-emerald-500"
+                  }`}
+                >
+                  {latestChange === null ? "—" : `${latestChange > 0 ? "+" : ""}${latestChange.toFixed(1)}%`}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Every saved calculation contributes to your timeline. Sign in to persist inputs, compare progress, and export raw metadata if needed.
-              </p>
+              <div className="rounded-2xl border border-border p-3 text-center">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.3em] mb-1">Average change</p>
+                <p className="text-xl font-semibold text-foreground">
+                  {averageChange === null ? "—" : `${averageChange > 0 ? "+" : ""}${averageChange.toFixed(1)}%`}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border p-3 text-center">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.3em] mb-1">Latest total</p>
+                <p className="text-xl font-semibold text-foreground">
+                  {latestTotalEmissions === null ? "—" : `${latestTotalEmissions.toFixed(1)}t`}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border p-3 text-center">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.3em] mb-1">Highest total</p>
+                <p className="text-xl font-semibold text-foreground">
+                  {highestTotalEmissions === 0 ? "—" : `${highestTotalEmissions.toFixed(1)}t`}
+                </p>
+              </div>
             </div>
-            <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+            <div className="space-y-3">
               {calculationEntries.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No history yet. Run a calculator to start tracking progress.</p>
               ) : (
@@ -763,6 +705,9 @@ const Profile = () => {
                 ))
               )}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Every saved calculation contributes to your timeline. Sign in to persist inputs, compare progress, and export raw metadata if needed.
+            </p>
           </div>
         </div>
       </main>

@@ -18,7 +18,7 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const toast = useToast();
-  const { session } = useSupabaseSession();
+  const { session, profileRole } = useSupabaseSession();
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
@@ -36,6 +36,9 @@ const Navbar = () => {
     "GreenLens user";
   const profileSlug = encodeURIComponent(currentDisplay);
   const profilePath = `/community/profile/${profileSlug}`;
+  const resolvedRole = profileRole;
+  const isAdmin = resolvedRole === "admin";
+  const navLinksToRender = isAdmin ? [...navLinks, { name: "ADMIN", path: "/admin" }] : navLinks;
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -68,7 +71,7 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
+            {navLinksToRender.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
@@ -118,6 +121,15 @@ const Navbar = () => {
                     >
                       Profile
                     </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Admin panel
+                      </Link>
+                    )}
                     <button
                       type="button"
                       onClick={handleLogout}
@@ -154,7 +166,7 @@ const Navbar = () => {
             >
               HOME
             </Link>
-            {navLinks.map((link) => (
+            {navLinksToRender.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
@@ -192,6 +204,15 @@ const Navbar = () => {
                   >
                     Profile
                   </Link>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsOpen(false)}
+                      className="btn-squared-outline inline-flex justify-center text-sm"
+                    >
+                      Admin panel
+                    </Link>
+                  )}
                   <button
                     onClick={() => {
                       setIsOpen(false);

@@ -1,27 +1,68 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 
 export const useSupabaseSession = () => {
   const [session, setSession] = useState<Session | null>(null);
+  const [profileRole, setProfileRole] = useState<string | null>(null);
+  const [loadingRole, setLoadingRole] = useState(true);
 
-  useEffect(() => {
-    if (!session) return;
+  const ensureProfileRow = useCallback(async () => {
+    if (!session?.user?.id) {
+      setProfileRole(null);
+      setLoadingRole(false);
+      return;
+    }
 
-    const ensureProfileRow = async () => {
-      const payload = {
-        user_id: session.user.id,
-        full_name: session.user.user_metadata?.full_name || session.user.email || null,
-        role: session.user.user_metadata?.role || "community_user",
-      };
-      const { error } = await supabase.from("profiles").upsert([payload], { onConflict: "user_id" });
-      if (error) {
-        console.warn("Unable to ensure profile row", error.message);
-      }
+    setLoadingRole(true);
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+    if (error) {
+      console.warn("Unable to load profile role", error.message);
+      setLoadingRole(false);
+      return;
+    }
+
+    if (data) {
+      setProfileRole(data.role);
+      setLoadingRole(false);
+      return;
+    }
+
+    const payload = {
+      user_id: session.user.id,
+      full_name: session.user.user_metadata?.full_name || session.user.email || null,
     };
 
-    ensureProfileRow();
+    const { error: insertError } = await supabase.from("profiles").insert([payload]);
+    if (insertError) {
+      console.warn("Unable to ensure profile row", insertError.message);
+      setLoadingRole(false);
+      return;
+    }
+
+    const { data: insertedData, error: readError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+    if (readError) {
+      console.warn("Unable to load inserted profile role", readError.message);
+      setLoadingRole(false);
+      return;
+    }
+
+    setProfileRole(insertedData?.role ?? null);
+    setLoadingRole(false);
   }, [session]);
+
+  useEffect(() => {
+    ensureProfileRow();
+  }, [ensureProfileRow]);
 
   useEffect(() => {
     let mounted = true;
@@ -49,5 +90,7 @@ export const useSupabaseSession = () => {
 
   return {
     session,
+    profileRole,
+    loadingRole,
   };
 };

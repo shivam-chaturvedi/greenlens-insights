@@ -57,18 +57,23 @@ const Calculator = () => {
         value: Number(entry.value.toFixed(3)),
       }));
 
-      const { error: profileError } = await supabase.from("profiles").upsert(
-        {
-          user_id: session.user.id,
-        full_name: session.user.user_metadata?.full_name || session.user.email,
-        role: session.user.user_metadata?.role || "community_user",
-      },
-      { onConflict: "user_id" },
-    );
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
 
-    if (profileError) {
-      throw profileError;
-    }
+      if (!existingProfile) {
+        const { error: insertError } = await supabase.from("profiles").insert([
+          {
+            user_id: session.user.id,
+            full_name: session.user.user_metadata?.full_name || session.user.email,
+          },
+        ]);
+        if (insertError) {
+          throw insertError;
+        }
+      }
 
     const latestResponse = await supabase
       .from("calculator_history")
@@ -279,6 +284,30 @@ const Calculator = () => {
                     </ul>
                   </div>
                 </div>
+              </div>
+              <div className="mt-8 bg-background/50 rounded-2xl border border-border p-6 space-y-3">
+                <h4 className="font-display text-base font-bold text-foreground">Calculator metrics explained</h4>
+                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-2">
+                  <li>
+                    <strong>Calculator history / Impact tracker (5 entries):</strong> Every saved run feeds the tracker so you can see how scenarios shift your footprint over time and measure progress.
+                  </li>
+                  <li>
+                    <strong>Latest variance (-91.9%):</strong> The percentage drop (or increase) from your last saved snapshot—here a 91.9% decrease—shows whether the most recent plan is greener than the baseline.
+                  </li>
+                  <li>
+                    <strong>Average change (-10.3%):</strong> The mean change across all saved snapshots, so you can tell at a glance if your overall trend is reducing emissions.
+                  </li>
+                  <li>
+                    <strong>Latest total (0.1 tCO₂e):</strong> The annualized footprint in tons from your most recent input, typically tied to the active category (e.g., Transportation).
+                  </li>
+                  <li>
+                    <strong>Highest total (1.0 tCO₂e):</strong> The largest annualized estimate you’ve generated so far; treat it as a cap to stay below.
+                  </li>
+                </ul>
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Personal footprint snapshots</p>
+                <p className="text-sm text-muted-foreground">
+                  Each timeline entry repeats the annualized estimate, the delta (Δ) relative to the baseline or previous run, and the dominant contributor (Transportation, Housing, etc.). Signing in lets you persist inputs, compare progress, and export raw metadata across devices.
+                </p>
               </div>
             </div>
           </div>

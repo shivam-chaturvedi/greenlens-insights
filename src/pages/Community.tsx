@@ -14,7 +14,7 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
-import { CATEGORIES, CalculationHistoryItem, SUBTOPICS, UPLOAD_OPTIONS } from "@/data/community-data";
+import { CATEGORIES, CalculationHistoryItem, SUBTOPICS } from "@/data/community-data";
 import type { PostAttachment } from "@/types/post";
 
 type PostRow = {
@@ -128,18 +128,21 @@ const sanitizeFileName = (value: string) => {
 
 const buildStoragePath = (userId: string, fileName: string) => `${userId}/${Date.now()}-${sanitizeFileName(fileName)}`;
 
+const DEFAULT_UPLOAD_TYPE = "Community media";
+
 const Community = () => {
   const { toast } = useToast();
-  const { session } = useSupabaseSession();
+  const { session, profileRole } = useSupabaseSession();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [isCreatingPost, setIsCreatingPost] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [newCategory, setNewCategory] = useState<string>(SUBTOPICS[0]);
-  const [newUploadType, setNewUploadType] = useState<string>(UPLOAD_OPTIONS[0].label);
+  const newUploadType = DEFAULT_UPLOAD_TYPE;
   const [newDirectData, setNewDirectData] = useState(true);
-  const [newTags, setNewTags] = useState("");
+  const [newTags, setNewTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [expandedCommentsId, setExpandedCommentsId] = useState<number | null>(null);
@@ -157,9 +160,27 @@ const Community = () => {
     return true;
   };
 
-  const uploadAttachedFiles = async (): Promise<PostAttachment[]> => {
+  const addTag = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    setNewTags((prev) => (prev.includes(trimmed) ? prev : [...prev, trimmed]));
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setNewTags((prev) => prev.filter((tag) => tag !== tagToRemove));
+  };
+
+  const handleTagInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addTag(tagInput);
+      setTagInput("");
+    }
+  };
+
+  const uploadAttachedFiles = async (uploadType: string): Promise<PostAttachment[]> => {
     if (!session || !attachedFiles.length) return [];
-    const bucket = storageBucketForUploadType(newUploadType);
+    const bucket = storageBucketForUploadType(uploadType);
     const attachments: PostAttachment[] = [];
 
     for (const file of attachedFiles) {
@@ -399,7 +420,7 @@ const Community = () => {
       : null;
 
   const userDisplayName = session?.user.user_metadata?.full_name || session?.user.email || "Sign in to see your stats";
-  const userRole = session?.user.user_metadata?.role || "Community Contributor";
+  const userRole = profileRole || session?.user.user_metadata?.role || "Community Contributor";
   const userPostCount = session ? posts.filter((post) => post.userId === session.user.id).length : 0;
   const userCommentCount = session
     ? posts.reduce(
@@ -417,13 +438,10 @@ const Community = () => {
     if (!requireAuthAction("Log in or sign up to publish a post.")) return;
     if (!session) return;
 
-    const tagsArray = newTags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean);
+    const tagsArray = newTags.filter(Boolean);
     setIsSubmittingPost(true);
     try {
-      const attachmentsPayload = attachedFiles.length ? await uploadAttachedFiles() : [];
+      const attachmentsPayload = attachedFiles.length ? await uploadAttachedFiles(DEFAULT_UPLOAD_TYPE) : [];
 
       const payload: Record<string, unknown> = {
         user_id: session.user.id,
@@ -451,8 +469,8 @@ const Community = () => {
       setNewTitle("");
       setNewContent("");
       setNewCategory(SUBTOPICS[0]);
-      setNewUploadType(UPLOAD_OPTIONS[0].label);
-      setNewTags("");
+      setNewTags([]);
+      setTagInput("");
       setNewDirectData(true);
       setAttachedFiles([]);
       setIsCreatingPost(false);
@@ -609,7 +627,7 @@ const Community = () => {
 
             {!session && (
               <div className="border border-destructive/60 rounded-xl bg-destructive/5 px-5 py-3 text-sm text-destructive">
-                Sign in to post, comment, or upvote. Your account keeps every interaction tied to your Supabase identity.
+                Sign in to post, comment, or upvote. Every interaction stays tied to your profile.
               </div>
             )}
 
@@ -645,17 +663,13 @@ const Community = () => {
                         </option>
                       ))}
                     </select>
-                    <select
-                      value={newUploadType}
-                      onChange={(event) => setNewUploadType(event.target.value)}
-                      className="w-full px-4 py-2 bg-background border border-border focus:outline-none focus:border-primary transition-colors"
-                    >
-                      {UPLOAD_OPTIONS.map((option) => (
-                        <option key={option.label} value={option.label}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="w-full border border-border rounded-xl px-4 py-3 bg-muted/10 text-sm text-muted-foreground">
+                      <p className="text-[11px] uppercase tracking-[0.3em]">Upload policy</p>
+                      <p className="font-semibold text-foreground">{DEFAULT_UPLOAD_TYPE}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Files are stored in the mixed media bucket; images, videos, and docs go in the same place.
+                      </p>
+                    </div>
                   </div>
                   <textarea
                     placeholder="Share your observation, data, or ask"
@@ -666,11 +680,32 @@ const Community = () => {
                   />
                   <input
                     type="text"
-                    placeholder="Tags (comma separated)"
-                    value={newTags}
-                    onChange={(event) => setNewTags(event.target.value)}
+                    placeholder="Add tags (press Enter to save)"
+                    value={tagInput}
+                    onChange={(event) => setTagInput(event.target.value)}
+                    onKeyDown={handleTagInputKeyDown}
                     className="w-full px-4 py-2 bg-background border border-border focus:outline-none focus:border-primary transition-colors"
                   />
+                  {newTags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {newTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="flex items-center gap-1 bg-muted/50 text-xs px-3 py-1 rounded-full border border-border"
+                        >
+                          <span className="truncate max-w-[8rem]">{tag}</span>
+                          <button
+                            type="button"
+                            className="text-muted-foreground hover:text-foreground"
+                            onClick={() => handleRemoveTag(tag)}
+                            aria-label={`Remove ${tag}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <label className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
@@ -749,7 +784,7 @@ const Community = () => {
                   </div>
                 </form>
                 <p className="text-xs text-muted-foreground">
-                  Every upload, comment, and vote is tied to your Supabase profile. Live calculators sync the data you saved.
+                  Every upload, comment, and vote stays tied to your profile. Live calculators keep the data you saved in sync.
                 </p>
               </div>
             )}
@@ -923,7 +958,7 @@ const Community = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-display text-lg font-bold">Profile</h3>
-                  <p className="text-xs text-muted-foreground">Everything you share is associated with your Supabase identity.</p>
+                  <p className="text-xs text-muted-foreground">Everything you share remains associated with your profile.</p>
                 </div>
                 <span className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                   {session ? "Signed in" : "Guest"}
@@ -966,9 +1001,9 @@ const Community = () => {
               <>
                 <div className="bg-background border border-border p-6 shadow-sm space-y-4">
                   <h3 className="font-display text-lg font-bold">Calculation History</h3>
-                  <div className="space-y-3">
-                    {history.length > 0 ? (
-                      history.map((entry) => (
+                <div className="space-y-3">
+                  {history.length > 0 ? (
+                    history.slice(0, 4).map((entry) => (
                         <div key={entry.id} className="border border-border rounded-lg p-3 bg-muted/20">
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-semibold">{entry.title}</p>
