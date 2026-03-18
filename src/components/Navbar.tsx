@@ -8,6 +8,7 @@ import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 const navLinks = [
   { name: "FEATURES", path: "/features" },
   { name: "COMMUNITY", path: "/community" },
+  { name: "CONSULTING", path: "/consulting" },
   { name: "CALCULATOR", path: "/calculator" },
   { name: "JOURNALISM HUB", path: "/journalism" },
   { name: "ABOUT", path: "/about" },

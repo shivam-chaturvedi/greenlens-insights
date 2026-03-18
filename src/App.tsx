@@ -15,6 +15,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import ArticleDetail from "./pages/ArticleDetail";
 import AdminPanel from "./pages/AdminPanel";
+import Consulting from "./pages/Consulting";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
 
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/features" element={<Features />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/consulting" element={<Consulting />} />
           <Route path="/community/profile/:username" element={<Profile />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/calculator" element={<Calculator />} />
