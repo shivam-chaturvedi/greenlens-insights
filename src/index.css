@@ -161,6 +161,60 @@
     @apply bg-card border border-border p-8;
     border-radius: 0;
   }
+
+  .custom-quill {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .custom-quill .ql-toolbar {
+    border-radius: 0;
+  }
+
+  .custom-quill .ql-container {
+    flex: 1;
+    overflow: hidden;
+    border: none;
+  }
+
+  .custom-quill .ql-editor {
+    height: 100%;
+    overflow-y: auto;
+    font-family: "Arial", "Helvetica Neue", sans-serif !important;
+  }
+
+  .custom-quill .ql-editor * {
+    font-family: "Arial", "Helvetica Neue", sans-serif !important;
+  }
+
+  .article-content-wrapper {
+    max-height: 46vh;
+    min-height: 28vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .article-content-wrapper .custom-quill {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .category-chip-button,
+  .category-chip-badge {
+    font-family: "Arial", "Helvetica Neue", sans-serif;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .category-chip-button {
+    font-size: 0.8rem;
+  }
+
+  .category-chip-badge {
+    font-size: 0.75rem;
+  }
 }
 
 @layer utilities {

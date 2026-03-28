@@ -6,12 +6,19 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   CATEGORY_COLOR_MAP,
+  ConsultingReport,
+  ReportCategory,
   fetchConsultingReports,
   getReportPublicUrl,
   REPORT_CATEGORIES,
-  ConsultingReport,
 } from "@/lib/consultingReports";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -42,7 +49,7 @@ const Consulting = () => {
   });
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState<ReportCategory | "All">("All");
   const [sortOption, setSortOption] = useState(SORT_OPTIONS[0].value);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -53,7 +60,8 @@ const Consulting = () => {
 
     return [...reports]
       .filter((report) => {
-        const matchesCategory = categoryFilter === "All" || report.category === categoryFilter;
+        const matchesCategory =
+          categoryFilter === "All" || report.categories.includes(categoryFilter);
         const matchesSearch = !normalizedSearch
           ? true
           : [report.title, report.description, report.summary].some((value) =>
@@ -96,14 +104,21 @@ const Consulting = () => {
   }, [reports]);
 
   const categoryInsights = useMemo(() => {
-    const map: Record<string, { count: number; savings: number }> = {};
+    const map: Record<ReportCategory, { count: number; savings: number }> = {} as Record<
+      ReportCategory,
+      { count: number; savings: number }
+    >;
     REPORT_CATEGORIES.forEach((category) => {
       map[category] = { count: 0, savings: 0 };
     });
     reports?.forEach((report) => {
-      const entry = map[report.category];
-      entry.count += 1;
-      entry.savings += report.savings;
+      REPORT_CATEGORIES.forEach((category) => {
+        const entry = map[category];
+        if (report.categories.includes(category)) {
+          entry.count += 1;
+        }
+        entry.savings += report.categorySavings[category] ?? 0;
+      });
     });
     return map;
   }, [reports]);
@@ -191,15 +206,15 @@ const Consulting = () => {
                             <Cell key={entry.name} fill={CATEGORY_COLOR_MAP[entry.name as keyof typeof CATEGORY_COLOR_MAP]} />
                           ))}
                         </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No data yet. Upload reports to populate the breakdown.</p>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
-                  {REPORT_CATEGORIES.map((category) => (
-                    <div key={category} className="space-y-1">
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No data yet. Upload reports to populate the breakdown.</p>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+                    {REPORT_CATEGORIES.map((category) => (
+                      <div key={category} className="space-y-1">
                       <div className="h-1 w-full rounded-full" style={{ background: CATEGORY_COLOR_MAP[category] }} />
                       <p className="font-semibold text-foreground">{categoryInsights[category]?.count ?? 0} reports</p>
                       <p>{currencyFormatter.format(categoryInsights[category]?.savings ?? 0)}</p>
@@ -238,7 +253,9 @@ const Consulting = () => {
                   <label className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Category</label>
                   <select
                     value={categoryFilter}
-                    onChange={(event) => setCategoryFilter(event.target.value)}
+                    onChange={(event) =>
+                      setCategoryFilter(event.target.value as ReportCategory | "All")
+                    }
                     className="mt-2 w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm"
                   >
                     <option value="All">All categories</option>
@@ -284,7 +301,20 @@ const Consulting = () => {
                     <article key={report.id} className="rounded-3xl border border-border bg-card p-6 shadow-lg">
                       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                         <div>
-                          <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">{report.category}</p>
+                          <div className="mb-2 flex flex-wrap gap-2">
+                            {report.categories.map((category) => (
+                              <span
+                                key={`${report.id}-${category}`}
+                                className="category-chip-badge rounded-full border px-3 py-1 font-semibold"
+                                style={{
+                                  borderColor: CATEGORY_COLOR_MAP[category],
+                                  color: CATEGORY_COLOR_MAP[category],
+                                }}
+                              >
+                                {category}
+                              </span>
+                            ))}
+                          </div>
                           <h3 className="font-display text-2xl font-semibold">{report.title}</h3>
                         </div>
                         <div className="text-right">
@@ -300,6 +330,19 @@ const Consulting = () => {
                       <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
                         {report.description}
                       </p>
+                      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-xs">
+                        {report.categories.map((category) => (
+                          <div
+                            key={`${report.id}-${category}`}
+                            className="rounded-2xl border border-border bg-muted/10 px-3 py-2"
+                          >
+                            <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">{category}</p>
+                            <p className="text-sm font-semibold text-foreground">
+                              {currencyFormatter.format(report.categorySavings[category] ?? 0)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
 
                       {report.summary && (
                         <details className="mt-4 space-y-2 rounded-2xl border border-border bg-muted p-4 text-sm text-muted-foreground">

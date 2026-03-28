@@ -16,6 +16,7 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   CATEGORY_COLOR_MAP,
   ConsultingReport,
+  ReportCategory,
   deleteReportPdf,
   fetchConsultingReports,
   getReportPublicUrl,
@@ -23,7 +24,18 @@ import {
   REPORT_CATEGORIES,
   uploadReportPdf,
 } from "@/lib/consultingReports";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Edit, Trash2, UploadCloud } from "lucide-react";
 
 const categories = ["Investigation", "Report", "Analysis", "Feature", "Guide", "Education"];
@@ -101,6 +113,21 @@ const ADMIN_VIEW_OPTIONS: { id: AdminView; label: string }[] = [
   { id: "articles", label: "Journalism articles" },
 ];
 
+type ConsultingFormState = {
+  title: string;
+  description: string;
+  categories: ReportCategory[];
+  categorySavings: Record<ReportCategory, string>;
+  summary: string;
+};
+
+const buildCategorySavingsInputState = (source?: Record<ReportCategory, number>) =>
+  REPORT_CATEGORIES.reduce((acc, category) => {
+    const value = source?.[category] ?? 0;
+    acc[category] = value > 0 ? value.toString() : "";
+    return acc;
+  }, {} as Record<ReportCategory, string>);
+
 const ConsultingAdminSection = () => {
   const { session, profileRole, loadingRole } = useSupabaseSession();
   const isAdmin = profileRole === "admin";
@@ -118,30 +145,32 @@ const ConsultingAdminSection = () => {
     refetchOnWindowFocus: false,
   });
 
-  const [formState, setFormState] = useState({
+  const [formState, setFormState] = useState<ConsultingFormState>({
     title: "",
     description: "",
-    category: REPORT_CATEGORIES[0],
-    savings: "",
+    categories: [REPORT_CATEGORIES[0]],
+    categorySavings: buildCategorySavingsInputState(),
     summary: "",
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [editingReport, setEditingReport] = useState<ConsultingReport | null>(null);
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
+  const [barCategoryFilter, setBarCategoryFilter] = useState<"all" | ReportCategory>("all");
 
   const categoryInsights = useMemo(() => {
-    const map: Record<ConsultingReport["category"], { count: number; savings: number }> = {} as Record<
-      ConsultingReport["category"],
-      { count: number; savings: number }
-    >;
-    REPORT_CATEGORIES.forEach((category) => {
-      map[category] = { count: 0, savings: 0 };
-    });
+    const map = REPORT_CATEGORIES.reduce((acc, category) => {
+      acc[category] = { count: 0, savings: 0 };
+      return acc;
+    }, {} as Record<ReportCategory, { count: number; savings: number }>);
     reports?.forEach((report) => {
-      const entry = map[report.category];
-      entry.count += 1;
-      entry.savings += report.savings;
+      REPORT_CATEGORIES.forEach((category) => {
+        const entry = map[category];
+        if (report.categories.includes(category)) {
+          entry.count += 1;
+        }
+        entry.savings += report.categorySavings[category] ?? 0;
+      });
     });
     return map;
   }, [reports]);
@@ -162,16 +191,84 @@ const ConsultingAdminSection = () => {
 
   const hasPieData = pieData.some((slice) => slice.value > 0);
 
-  const handleInputChange = (field: string, value: string) => {
+  const highlightedReports = useMemo(() => {
+    if (!reports) return [];
+    return [...reports].sort((a, b) => b.savings - a.savings).slice(0, 3);
+  }, [reports]);
+
+  const reportNamesByCategory = useMemo(() => {
+    const map = REPORT_CATEGORIES.reduce((acc, category) => {
+      acc[category] = [];
+      return acc;
+    }, {} as Record<ReportCategory, string[]>);
+    reports?.forEach((report) => {
+      report.categories.forEach((category) => {
+        if (map[category].length < 3) {
+          map[category].push(report.title);
+        }
+      });
+    });
+    return map;
+  }, [reports]);
+
+  const barData = useMemo(() => {
+    if (!reports) return [];
+    return [...reports]
+      .map((report) => ({
+        id: report.id,
+        name: report.title,
+        savings:
+          barCategoryFilter === "all"
+            ? report.savings
+            : report.categorySavings[barCategoryFilter] ?? 0,
+        categories: report.categories,
+      }))
+      .sort((a, b) => b.savings - a.savings);
+  }, [reports, barCategoryFilter]);
+
+  const displayedBarData = barData.slice(0, 8);
+
+  const totalCategoryInputs = formState.categories.reduce((sum, category) => {
+    const raw = Number(formState.categorySavings[category] ?? "0");
+    return sum + (Number.isFinite(raw) ? raw : 0);
+  }, 0);
+
+  const handleFieldChange = (
+    field: keyof Omit<ConsultingFormState, "categories" | "categorySavings">,
+    value: string,
+  ) => {
     setFormState((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const toggleCategory = (category: ReportCategory) => {
+    setFormState((prev) => {
+      const alreadySelected = prev.categories.includes(category);
+      if (alreadySelected && prev.categories.length === 1) {
+        return prev;
+      }
+      const categories = alreadySelected
+        ? prev.categories.filter((value) => value !== category)
+        : [...prev.categories, category];
+      return { ...prev, categories };
+    });
+  };
+
+  const updateCategorySavings = (category: ReportCategory, value: string) => {
+    setFormState((prev) => ({
+      ...prev,
+      categorySavings: {
+        ...prev.categorySavings,
+        [category]: value,
+      },
+    }));
   };
 
   const resetForm = () => {
     setFormState({
       title: "",
       description: "",
-      category: REPORT_CATEGORIES[0],
-      savings: "",
+      categories: [REPORT_CATEGORIES[0]],
+      categorySavings: buildCategorySavingsInputState(),
       summary: "",
     });
     setSelectedFile(null);
@@ -183,8 +280,8 @@ const ConsultingAdminSection = () => {
     setFormState({
       title: report.title,
       description: report.description,
-      category: report.category,
-      savings: report.savings.toString(),
+      categories: report.categories.length ? report.categories : [REPORT_CATEGORIES[0]],
+      categorySavings: buildCategorySavingsInputState(report.categorySavings),
       summary: report.summary,
     });
     setSelectedFile(null);
@@ -197,14 +294,50 @@ const ConsultingAdminSection = () => {
       return;
     }
 
-    if (!formState.title.trim() || !formState.description.trim()) {
+    const trimmedTitle = formState.title.trim();
+    if (!trimmedTitle || !formState.description.trim()) {
       toast({ title: "Missing fields", description: "Please provide both a title and description." });
       return;
     }
 
-    const savingsValue = Number(formState.savings);
-    if (Number.isNaN(savingsValue)) {
-      toast({ title: "Invalid savings", description: "Enter a numeric value for estimated savings." });
+    if (!formState.categories.length) {
+      toast({
+        title: "Select a category",
+        description: "Pick at least one category and provide an estimate for it.",
+      });
+      return;
+    }
+
+    const missingCategoryValues = formState.categories.some((category) => {
+      const raw = formState.categorySavings[category]?.trim();
+      return !raw || Number.isNaN(Number(raw));
+    });
+
+    if (missingCategoryValues) {
+      toast({
+        title: "Invalid savings",
+        description: "Enter a numeric estimate for each selected category.",
+      });
+      return;
+    }
+
+    const parsedCategorySavings = REPORT_CATEGORIES.reduce((acc, category) => {
+      const raw = formState.categorySavings[category]?.trim();
+      const numeric = raw ? Number(raw) : 0;
+      acc[category] = Number.isFinite(numeric) && numeric >= 0 ? numeric : 0;
+      return acc;
+    }, {} as Record<ReportCategory, number>);
+
+    const totalEstimatedSavings = formState.categories.reduce(
+      (sum, category) => sum + parsedCategorySavings[category],
+      0,
+    );
+
+    if (totalEstimatedSavings <= 0) {
+      toast({
+        title: "Zero savings",
+        description: "Category estimates must add up to more than zero.",
+      });
       return;
     }
 
@@ -230,10 +363,11 @@ const ConsultingAdminSection = () => {
       }
 
       const payload = {
-        title: formState.title.trim(),
+        title: trimmedTitle,
         description: formState.description.trim(),
-        category: formState.category,
-        savings: savingsValue,
+        category: formState.categories,
+        savings: totalEstimatedSavings,
+        category_savings: parsedCategorySavings,
         summary: formState.summary.trim(),
         pdf_path: pdfPath,
         pdf_bucket: REPORT_BUCKET,
@@ -321,8 +455,12 @@ const ConsultingAdminSection = () => {
       );
     }
 
+    const topCategory =
+      Object.entries(categoryInsights).sort((a, b) => b[1].count - a[1].count)[0]?.[0] ?? "—";
+    const barFill = barCategoryFilter === "all" ? "#6366f1" : CATEGORY_COLOR_MAP[barCategoryFilter];
+
     return (
-      <div className="space-y-10">
+      <div className="space-y-8">
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="rounded-3xl border border-border bg-card p-6">
             <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Businesses helped</p>
@@ -334,39 +472,147 @@ const ConsultingAdminSection = () => {
           </div>
           <div className="rounded-3xl border border-border bg-card p-6">
             <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Top category</p>
-            <p className="text-2xl font-semibold mt-2">
-              {Object.entries(categoryInsights).sort((a, b) => b[1].count - a[1].count)[0]?.[0] ?? "—"}
-            </p>
+            <p className="text-2xl font-semibold mt-2">{topCategory}</p>
           </div>
         </div>
-        <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold">Solution breakdown</h2>
-            <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Savings</span>
-          </div>
-          <div className="h-48">
-                {pieData.some((slice) => slice.value > 0) ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Tooltip
-                        contentStyle={{
-                          borderRadius: 12,
-                          backgroundColor: "var(--card)",
-                          borderColor: "var(--border)",
-                        }}
-                        formatter={(value: number) => currencyFormatter.format(value)}
-                        labelFormatter={(name) => `${name}`}
-                      />
-                      <Pie data={pieData} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="100%" paddingAngle={4}>
-                        {pieData.map((entry) => (
-                          <Cell key={entry.name} fill={CATEGORY_COLOR_MAP[entry.name as keyof typeof CATEGORY_COLOR_MAP]} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {REPORT_CATEGORIES.map((category) => (
+            <div key={category} className="rounded-3xl border border-border bg-card p-5 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">{category}</p>
+                <span className="text-[11px] text-muted-foreground">
+                  {categoryInsights[category]?.count ?? 0} reports
+                </span>
+              </div>
+              <p className="text-2xl font-semibold">
+                {currencyFormatter.format(categoryInsights[category]?.savings ?? 0)}
+              </p>
+              <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                {reportNamesByCategory[category]?.length ? (
+                  reportNamesByCategory[category].map((title) => (
+                    <span key={`${category}-${title}`} className="rounded-full border border-border px-2 py-1">
+                      {title}
+                    </span>
+                  ))
                 ) : (
-              <p className="text-sm text-muted-foreground">No savings yet.</p>
-            )}
+                  <span className="uppercase tracking-[0.3em] text-[11px] text-muted-foreground">
+                    No reports yet
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Solution breakdown</p>
+                <h2 className="font-display text-lg font-semibold">Category savings</h2>
+              </div>
+              <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Savings</span>
+            </div>
+            <div className="h-48">
+              {hasPieData ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: 12,
+                        backgroundColor: "var(--card)",
+                        borderColor: "var(--border)",
+                      }}
+                      formatter={(value: number) => currencyFormatter.format(value)}
+                      labelFormatter={(name) => `${name}`}
+                    />
+                    <Pie
+                      data={pieData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius="55%"
+                      outerRadius="100%"
+                      paddingAngle={4}
+                    >
+                      {pieData.map((entry) => (
+                        <Cell
+                          key={entry.name}
+                          fill={CATEGORY_COLOR_MAP[entry.name as keyof typeof CATEGORY_COLOR_MAP]}
+                        />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-sm text-muted-foreground">No savings yet.</p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">Featured reports:</span>
+              {highlightedReports.length ? (
+                highlightedReports.map((report) => (
+                  <span key={report.id} className="rounded-full border border-border px-2 py-1">
+                    {report.title}
+                  </span>
+                ))
+              ) : (
+                <span>No reports yet</span>
+              )}
+            </div>
+          </div>
+          <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Reports overview</p>
+                <h2 className="font-display text-lg font-semibold">Per-report savings</h2>
+              </div>
+              <select
+                value={barCategoryFilter}
+                onChange={(event) => setBarCategoryFilter(event.target.value as "all" | ReportCategory)}
+                className="rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em]"
+              >
+                <option value="all">All categories</option>
+                {REPORT_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Showing {displayedBarData.length} reports by {barCategoryFilter === "all" ? "overall" : barCategoryFilter.toLowerCase()} savings.
+            </div>
+            <div className="h-64">
+              {displayedBarData.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={displayedBarData} margin={{ top: 10, right: 16, bottom: 30, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 11 }}
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis tickFormatter={(value) => currencyFormatter.format(value)} />
+                    <Tooltip
+                      formatter={(value: number) => currencyFormatter.format(value)}
+                      labelFormatter={(label) => label}
+                    />
+                    <Bar dataKey="savings" fill={barFill ?? "#6366f1"} radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-sm text-muted-foreground">No data yet to populate the bar chart.</p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+              {displayedBarData.slice(0, 3).map((report) => (
+                <span key={report.id} className="rounded-full border border-border px-2 py-1">
+                  {report.name}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -389,7 +635,9 @@ const ConsultingAdminSection = () => {
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[420px_1fr]">
           <form onSubmit={handleSubmit} className="space-y-6 rounded-3xl border border-border bg-card p-6">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-2xl font-semibold">{editingReport ? "Update report" : "Upload new report"}</h2>
+              <h2 className="font-display text-2xl font-semibold">
+                {editingReport ? "Update report" : "Upload new report"}
+              </h2>
               <Button variant="ghost" size="sm" onClick={resetForm} disabled={isSaving}>
                 <UploadCloud className="w-4 h-4" />
                 Reset
@@ -399,7 +647,7 @@ const ConsultingAdminSection = () => {
               <label className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Title</label>
               <Input
                 value={formState.title}
-                onChange={(event) => handleInputChange("title", event.target.value)}
+                onChange={(event) => handleFieldChange("title", event.target.value)}
                 placeholder="Business or project name"
                 required
               />
@@ -408,36 +656,59 @@ const ConsultingAdminSection = () => {
               <label className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Description</label>
               <Textarea
                 value={formState.description}
-                onChange={(event) => handleInputChange("description", event.target.value)}
+                onChange={(event) => handleFieldChange("description", event.target.value)}
                 placeholder="Brief overview of the engagement"
                 rows={4}
                 required
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Category</label>
-              <select
-                value={formState.category}
-                onChange={(event) => handleInputChange("category", event.target.value)}
-                className="w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm"
-              >
-                {REPORT_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Categories & savings</p>
+              <div className="grid gap-3 md:grid-cols-2">
+                {REPORT_CATEGORIES.map((category) => {
+                  const selected = formState.categories.includes(category);
+                  return (
+                    <label
+                      key={category}
+                      className={`flex flex-col rounded-2xl border bg-muted/10 p-3 transition ${
+                        selected ? "border-foreground/60 bg-muted/60" : "border-border"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sm">{category}</span>
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleCategory(category)}
+                          className="h-4 w-4 accent-foreground"
+                        />
+                      </div>
+                      {selected && (
+                        <input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={formState.categorySavings[category]}
+                          onChange={(event) => updateCategorySavings(category, event.target.value)}
+                          placeholder="0"
+                          className="mt-3 w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-primary"
+                        />
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Total estimated savings: <span className="font-semibold">{currencyFormatter.format(totalCategoryInputs)}</span>
+              </p>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Estimated savings ($)</label>
-              <Input
-                value={formState.savings}
-                onChange={(event) => handleInputChange("savings", event.target.value)}
-                type="number"
-                min={0}
-                placeholder="0"
-                step="0.01"
-                required
+              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Summary</label>
+              <Textarea
+                value={formState.summary}
+                onChange={(event) => handleFieldChange("summary", event.target.value)}
+                placeholder="Optional highlight or executive summary"
+                rows={3}
               />
             </div>
             <div className="space-y-2">
@@ -455,15 +726,6 @@ const ConsultingAdminSection = () => {
                   ? editingReport.pdfPath.split("/").pop() ?? "Current PDF"
                   : "Select a PDF file"}
               </p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Summary</label>
-              <Textarea
-                value={formState.summary}
-                onChange={(event) => handleInputChange("summary", event.target.value)}
-                placeholder="Optional highlight or executive summary"
-                rows={3}
-              />
             </div>
             <div className="flex justify-between gap-3">
               <Button type="submit" disabled={isSaving}>
@@ -513,17 +775,36 @@ const ConsultingAdminSection = () => {
                     <div key={report.id} className="rounded-3xl border border-border bg-card p-5 space-y-3">
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
-                          <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">{report.category}</p>
+                          <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">
+                            {report.categories.length ? report.categories.join(", ") : "Other"}
+                          </p>
                           <h3 className="text-xl font-semibold text-foreground">{report.title}</h3>
-                          <p className="text-xs text-muted-foreground">Uploaded {format(new Date(report.createdAt), "MMM d, yyyy")}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Uploaded {format(new Date(report.createdAt), "MMM d, yyyy")}
+                          </p>
                         </div>
                         <div className="text-right">
                           <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Savings</p>
-                          <p className="text-2xl font-semibold text-foreground">{currencyFormatter.format(report.savings)}</p>
+                          <p className="text-2xl font-semibold text-foreground">
+                            {currencyFormatter.format(report.savings)}
+                          </p>
                           <p className="text-xs text-muted-foreground">{report.summary && "Summary provided"}</p>
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground leading-relaxed">{report.description}</p>
+                      <div className="grid gap-2 md:grid-cols-3">
+                        {report.categories.map((category) => (
+                          <div
+                            key={`${report.id}-${category}`}
+                            className="rounded-2xl border border-border bg-muted/10 px-3 py-2 text-xs"
+                          >
+                            <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">{category}</p>
+                            <p className="text-sm font-semibold text-foreground">
+                              {currencyFormatter.format(report.categorySavings[category] ?? 0)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                       <div className="flex flex-wrap items-center gap-2">
                         {pdfUrl && (
                           <a
@@ -560,7 +841,6 @@ const ConsultingAdminSection = () => {
     </div>
   );
 };
-
 const ArticlesAdminSection = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -907,8 +1187,8 @@ const ArticlesAdminSection = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 px-4 py-6">
-          <div className="w-full max-w-3xl max-h-[50vh] overflow-hidden rounded-3xl border border-border bg-background shadow-2xl">
-            <div className="h-full overflow-y-auto px-6 py-6">
+        <div className="w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-3xl border border-border bg-background shadow-2xl">
+          <div className="px-6 py-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">
