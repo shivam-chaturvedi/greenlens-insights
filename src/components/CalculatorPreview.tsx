@@ -11,12 +11,12 @@ const calculatorTypes = [
   {
     icon: Building,
     title: "Organizational",
-    description: "Comprehensive tracking for businesses, schools, and institutions at every level.",
+    description: "Comprehensive consulting for businesses, schools, and institutions at every level.",
   },
   {
     icon: Zap,
-    title: "Appliance-Level",
-    description: "Granular tracking for individual machines and equipment in your facility.",
+    title: "Community Forum",
+    description: "Utilize the community forum to find opportunities for volunteering  and being more sustainable",
   },
 ];
 
@@ -32,10 +32,10 @@ const CalculatorPreview = () => {
             </p>
           </div>
           <h2 className="font-display text-4xl md:text-5xl font-bold mb-6">
-            Calculate emissions at every scale
+            Calculate Emissions and Find Opportunities at Every Scale
           </h2>
           <p className="text-primary-foreground/70 text-lg max-w-2xl mx-auto">
-            From individual actions to organizational operations, get accurate carbon accounting that matters.
+            From individual actions to community initiatives operations, get accurate carbon accounting and find opportunities that matter.
           </p>
         </div>
 

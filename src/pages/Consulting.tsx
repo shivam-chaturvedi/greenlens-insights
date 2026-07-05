@@ -21,6 +21,7 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const REPORTS_PER_PAGE = 6;
 const SORT_OPTIONS = [
@@ -35,6 +36,27 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   currency: "USD",
   maximumFractionDigits: 0,
 });
+
+
+const ReportSkeleton = () => (
+  <div className="bg-background border border-border rounded-xl p-6 space-y-4 flex flex-col justify-between shadow-sm">
+    <div className="space-y-3">
+      <div className="flex justify-between items-start gap-4">
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-8 w-[100px] shrink-0" />
+      </div>
+      <Skeleton className="h-4 w-1/4" />
+    </div>
+    <div className="space-y-2 mt-4">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+    </div>
+    <div className="flex gap-2 mt-4">
+      <Skeleton className="h-6 w-[80px] rounded-full" />
+      <Skeleton className="h-6 w-[80px] rounded-full" />
+    </div>
+  </div>
+);
 
 const Consulting = () => {
   const {
@@ -162,7 +184,7 @@ const Consulting = () => {
             <p className="text-sm font-medium tracking-widest text-muted-foreground">CONSULTING</p>
             <h1 className="font-display text-4xl md:text-5xl font-bold">Consulting Reports</h1>
             <p className="text-muted-foreground max-w-2xl">
-              Insights, savings estimates, and audited proof points for organizations GreenLens has helped optimize.
+              Insights, savings estimates, and audited proof points for organizations GreenLens has helped optimize. Some business names were redacted for privacy purposes.
             </p>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8">
@@ -282,7 +304,11 @@ const Consulting = () => {
                 </div>
               </div>
 
-              {isLoading && loadingState}
+              {isLoading && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((i) => <ReportSkeleton key={i} />)}
+                </div>
+              )}
               {isError && (
                 <div className="rounded-3xl border border-destructive/70 bg-destructive/10 p-6 text-sm text-destructive">
                   {error instanceof Error ? error.message : "Unable to load reports"}

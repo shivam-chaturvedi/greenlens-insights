@@ -47,9 +47,8 @@ const Footer = () => {
             <ul className="space-y-3">
               {[
                 { name: "About", path: "/about" },
-                { name: "Documentation", path: "#" },
-                { name: "Case Studies", path: "#" },
-                { name: "API Access", path: "#" },
+                { name: "Business Consulting Reports", path: "/consulting" },
+                { name: "FCPS School Index Research", path: "#" },
               ].map((link, index) => (
                 <li key={index}>
                   <Link
@@ -69,11 +68,11 @@ const Footer = () => {
             <ul className="space-y-4">
               <li className="flex items-center gap-3 text-background/70 text-sm">
                 <Mail className="w-4 h-4" />
-                <span>contact@greenlens.org</span>
+                <span>annadiya1@gmail.com</span>
               </li>
               <li className="flex items-center gap-3 text-background/70 text-sm">
                 <MapPin className="w-4 h-4" />
-                <span>Global Initiative</span>
+                <span>Vienna, Virginia</span>
               </li>
             </ul>
 

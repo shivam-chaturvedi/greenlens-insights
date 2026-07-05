@@ -37,6 +37,7 @@ import {
   YAxis,
 } from "recharts";
 import { Edit, Trash2, UploadCloud } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const categories = ["Investigation", "Report", "Analysis", "Feature", "Guide", "Education"];
 const statusOptions = [
@@ -754,7 +755,9 @@ const ConsultingAdminSection = () => {
             </div>
 
             {isLoading && (
-              <div className="rounded-3xl border border-border bg-muted p-6 text-sm text-muted-foreground">Loading reports ...</div>
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => <AdminReportSkeleton key={i} />)}
+              </div>
             )}
             {isError && (
               <div className="rounded-3xl border border-destructive/70 bg-destructive/10 p-6 text-sm text-destructive">
@@ -1212,7 +1215,14 @@ const ArticlesAdminSection = () => {
                 </button>
               </div>
               {isModalLoadingArticle ? (
-                <div className="py-10 text-center text-muted-foreground">Loading article...</div>
+                <div className="space-y-4 py-6">
+                  <Skeleton className="h-10 w-3/4" />
+                  <Skeleton className="h-4 w-1/4 mb-8" />
+                  <Skeleton className="w-full aspect-video rounded-xl mb-4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6" />
+                </div>
               ) : (
                 <form onSubmit={handleCreateArticle} className="space-y-4">
                   <div className="grid gap-3 md:grid-cols-2">
@@ -1353,6 +1363,34 @@ const ArticlesAdminSection = () => {
     </div>
   );
 };
+
+
+const AdminReportSkeleton = () => (
+  <div className="rounded-3xl border border-border bg-card p-6 flex justify-between items-center space-y-0">
+    <div className="space-y-2">
+      <Skeleton className="h-5 w-[200px]" />
+      <Skeleton className="h-4 w-[150px]" />
+    </div>
+    <div className="flex gap-2">
+      <Skeleton className="h-8 w-16" />
+      <Skeleton className="h-8 w-16" />
+    </div>
+  </div>
+);
+
+const AdminArticleSkeleton = () => (
+  <div className="rounded-3xl border border-border bg-card p-6 flex justify-between items-center space-y-0">
+    <div className="space-y-2 flex-1">
+      <Skeleton className="h-5 w-[250px]" />
+      <Skeleton className="h-4 w-[180px]" />
+      <Skeleton className="h-3 w-[100px] mt-2" />
+    </div>
+    <div className="flex gap-2">
+      <Skeleton className="h-8 w-16" />
+      <Skeleton className="h-8 w-16" />
+    </div>
+  </div>
+);
 
 const AdminPanel = () => {
   const [activeView, setActiveView] = useState<AdminView>("consulting");

@@ -8,15 +8,16 @@ const Hero = () => {
         <div className="text-center max-w-5xl mx-auto">
           {/* Main Headline */}
           <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-bold leading-[1.1] mb-8 animate-fade-in">
-            Measure truth &{" "}
-            <span className="highlight-box">expose</span>
+            Solutions-orientated.
             <br />
-            greenwashing.
+            <span className="highlight-box">Community-focused.</span>
+            <br />
+            Action-driven.
           </h1>
 
           {/* Subheadline */}
           <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-12 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            GreenLens transforms sustainability claims into verified data, empowering organizations, students, and journalists to drive real climate action.
+            Project Green Lens aims to transform sustainability consulting and research into quantifiable data, empowering businesses, homeowners, schools, and students to drive real climate action.
           </p>
 
           {/* CTA Button */}

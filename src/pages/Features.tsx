@@ -7,33 +7,63 @@ import { ArrowUpRight } from "lucide-react";
 const features = [
   {
     icon: BarChart3,
-    title: "Multi-Level Carbon Tracking",
-    description: "Measure emissions at appliance, machine, department, organizational, and individual levels. Get complete visibility into your carbon footprint with granular data that matters.",
+    title: "Sustainability Consulting",
+    description: (
+      <>
+        <strong>Breaking down the barriers that prevent organizations from taking action.</strong>
+        <br />
+        We provide free on-site sustainability assessments for businesses, clinics, and community organizations, identifying practical opportunities to reduce costs, improve efficiency, and lower emissions.
+      </>
+    ),
     highlights: ["Appliance-level tracking", "Department aggregation", "Organizational totals"],
   },
 
   {
     icon: Shield,
-    title: "AI-Guided Reduction Insights",
-    description: "Receive rule-based recommendations to reduce emissions through optimization, efficiency improvements, and cleaner alternatives.",
+    title: "Community Action Network",
+    description: (
+      <>
+        <strong>Connecting people with opportunities to make a difference.</strong>
+        <br />
+        Our community forum highlights volunteer opportunities, local initiatives, environmental events, and collaborative projects that empower residents to create change where they live.
+      </>
+    ),
     highlights: ["Optimization tips", "Efficiency analysis", "Alternative suggestions"],
   },
   {
     icon: BookOpen,
-    title: "Green Journalism Tools",
-    description: "Transform complex emission data into compelling public-facing narratives. Perfect for journalists, researchers, and communicators.",
+    title: "Sustainability Research & Analytics",
+    description: (
+      <>
+        <strong>Using data to uncover what works.</strong>
+        <br />
+        Through quantitative research, including our Fairfax County school sustainability index, we identify sustainability leaders, investigate best practices, and generate insights that can guide future action.
+      </>
+    ),
     highlights: ["Data storytelling", "Visual exports", "Public reports"],
   },
   {
     icon: Users,
-    title: "Education-First Design",
-    description: "Carbon literacy modules built for students, educators, and NGOs. Learn while you track with guided educational content.",
+    title: "Household Sustainability Resources",
+    description: (
+      <>
+        <strong>Helping families save money while reducing their environmental impact.</strong>
+        <br />
+        We connect homeowners with practical strategies, rebates, incentives, and efficiency improvements that lower utility costs and emissions at the same time.
+      </>
+    ),
     highlights: ["Interactive learning", "Student modules", "Educator resources"],
   },
   {
     icon: Globe,
-    title: "Global Accountability",
-    description: "Track and compare sustainability efforts across institutions. Transparent leaderboards drive healthy competition for improvement.",
+    title: "Climate Education & Awareness",
+    description: (
+      <>
+        <strong>Transforming information into action.</strong>
+        <br />
+        Through blogs, guides, tools, and educational content, we make climate, sustainability, and environmental topics accessible, empowering individuals to make informed decisions in their daily lives.
+      </>
+    ),
     highlights: ["Green School Index", "Org rankings", "Benchmarking"],
   },
 

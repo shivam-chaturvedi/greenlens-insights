@@ -8,6 +8,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const placeholderImage = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1400&q=80";
 
@@ -135,6 +136,39 @@ const fetchArticleComments = async (articleId: number): Promise<ArticleComment[]
 };
 
 const formatDate = (value?: string | null) => (value ? format(new Date(value), "MMMM d, yyyy") : "—");
+
+
+const ArticleDetailSkeleton = () => (
+  <div className="max-w-4xl mx-auto py-12 px-6">
+    <Skeleton className="h-4 w-[100px] mb-8" />
+    <Skeleton className="w-full aspect-video rounded-xl mb-8" />
+    <div className="space-y-4">
+      <Skeleton className="h-10 w-3/4" />
+      <Skeleton className="h-4 w-1/4" />
+      <Skeleton className="h-4 w-1/3" />
+    </div>
+    <div className="mt-12 space-y-4">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+    </div>
+  </div>
+);
+
+const CommentSkeleton = () => (
+  <div className="flex gap-4 mb-6">
+    <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+    <div className="flex-1 space-y-2">
+      <div className="flex justify-between">
+        <Skeleton className="h-4 w-[120px]" />
+        <Skeleton className="h-3 w-[60px]" />
+      </div>
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-3/4" />
+    </div>
+  </div>
+);
 
 const ArticleDetail = () => {
   const { slug } = useParams();
@@ -362,30 +396,12 @@ const ArticleDetail = () => {
   };
 
   const handleShare = async () => {
-    if (!article) {
-      return;
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast({ title: "Link copied!", description: "Article link copied to clipboard." });
+    } catch (err) {
+      toast({ title: "Failed to copy", description: "Could not copy link.", variant: "destructive" });
     }
-
-    const shareData = {
-      title: article.title,
-      text: article.summary ?? article.content.substring(0, 100),
-      url: window.location.href,
-    };
-
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      try {
-        await navigator.share(shareData);
-        toast({ title: "Shared!", description: "Article shared successfully." });
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") {
-          console.error("Error sharing:", err);
-        }
-      }
-      return;
-    }
-
-    await navigator.clipboard.writeText(window.location.href);
-    toast({ title: "Link copied!", description: "Article link has been copied to your clipboard." });
   };
 
   if (!isValidSlug) {
@@ -565,7 +581,10 @@ const ArticleDetail = () => {
                 </div>
               </form>
               {areCommentsLoading ? (
-                <p className="text-sm text-muted-foreground">Loading comments...</p>
+                <div>
+                  <CommentSkeleton />
+                  <CommentSkeleton />
+                </div>
               ) : comments.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No comments yet. Check back later or contribute via the community board.</p>
               ) : (

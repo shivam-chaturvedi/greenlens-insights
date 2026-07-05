@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const placeholderImage = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&q=80";
 
@@ -78,6 +79,24 @@ const fetchPublishedArticles = async () => {
 };
 
 const formatPublishedDate = (value?: string | null) => (value ? format(new Date(value), "MMMM d, yyyy") : "—");
+
+
+const ArticleSkeleton = () => (
+  <div className="bg-background border border-border rounded-xl overflow-hidden flex flex-col h-full shadow-sm">
+    <Skeleton className="w-full aspect-video" />
+    <div className="p-6 space-y-4 flex flex-col flex-1">
+      <div className="flex justify-between items-center">
+        <Skeleton className="h-5 w-[80px] rounded-full" />
+        <Skeleton className="h-4 w-[100px]" />
+      </div>
+      <Skeleton className="h-6 w-full" />
+      <Skeleton className="h-4 w-full flex-1" />
+      <div className="pt-4 border-t border-border mt-auto">
+        <Skeleton className="h-10 w-full rounded-md" />
+      </div>
+    </div>
+  </div>
+);
 
 const Journalism = () => {
   const { toast } = useToast();
@@ -194,7 +213,9 @@ const Journalism = () => {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-20 text-muted-foreground">Loading articles...</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => <ArticleSkeleton key={i} />)}
+            </div>
           ) : filteredArticles.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">No articles match the current filters.</div>
           ) : (

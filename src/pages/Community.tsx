@@ -1,5 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {
@@ -10,12 +19,25 @@ import {
   X,
   Sparkles,
   Link as LinkIcon,
+  Edit,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { CATEGORIES, CalculationHistoryItem, SUBTOPICS } from "@/data/community-data";
 import type { PostAttachment } from "@/types/post";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type PostRow = {
   id: number;
@@ -66,6 +88,57 @@ type CommunityPost = {
   attachments: PostAttachment[];
   comments: CommunityComment[];
   userLiked?: boolean;
+};
+
+
+const parseMarkdownBold = (content: string) => {
+  if (!content) return "";
+  return content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+};
+
+
+const PostSkeleton = () => (
+  <div className="bg-background border border-border shadow-sm rounded-2xl overflow-hidden p-6 space-y-4">
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <Skeleton className="w-12 h-12 rounded-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[150px]" />
+          <Skeleton className="h-3 w-[100px]" />
+        </div>
+      </div>
+    </div>
+    <Skeleton className="h-8 w-3/4" />
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+    </div>
+    <div className="flex gap-4 pt-4 border-t border-border mt-4">
+      <Skeleton className="h-4 w-[80px]" />
+      <Skeleton className="h-4 w-[80px]" />
+      <Skeleton className="h-4 w-[80px]" />
+    </div>
+  </div>
+);
+
+const AttachmentPreview = ({ attachment }: { attachment: PostAttachment }) => {
+  const url = supabase.storage.from(attachment.bucket).getPublicUrl(attachment.path).data.publicUrl;
+  if (attachment.mime_type.startsWith("image/")) {
+    return <img src={url} alt={attachment.name} className="w-full max-h-[400px] object-contain rounded-lg border border-border bg-muted/20" />;
+  }
+  if (attachment.mime_type.startsWith("video/")) {
+    return <video src={url} controls className="w-full max-h-[400px] rounded-lg border border-border bg-muted/20" />;
+  }
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+      <LinkIcon className="w-5 h-5 text-muted-foreground" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{attachment.name}</p>
+        <p className="text-xs text-muted-foreground">{(attachment.size / 1024).toFixed(1)} KB</p>
+      </div>
+    </a>
+  );
 };
 
 const DEFAULT_AUTHOR_NAME = "Community contributor";
@@ -136,6 +209,13 @@ const Community = () => {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [isCreatingPost, setIsCreatingPost] = useState(false);
+  const [editingPostId, setEditingPostId] = useState<number | null>(null);
+  const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentContent, setEditingCommentContent] = useState<string>("");
+  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
+  const [isDeletingComment, setIsDeletingComment] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [newCategory, setNewCategory] = useState<string>(SUBTOPICS[0]);
@@ -429,6 +509,34 @@ const Community = () => {
       )
     : 0;
 
+  const handleEditPost = (post: CommunityPost) => {
+    setNewTitle(post.title);
+    setNewContent(post.content);
+    setNewCategory(post.category);
+    setNewTags(post.tags || []);
+    setNewDirectData(post.hasDirectData);
+    setEditingPostId(post.id);
+    setIsCreatingPost(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeletePost = async () => {
+    if (!deletingPostId) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from("posts").delete().eq("id", deletingPostId);
+      if (error) {
+        toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Post deleted", description: "Your post has been removed." });
+      await refreshCommunityPosts();
+    } finally {
+      setIsDeleting(false);
+      setDeletingPostId(null);
+    }
+  };
+
   const handleCreatePost = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!newTitle.trim() || !newContent.trim()) {
@@ -457,9 +565,17 @@ const Community = () => {
         payload.attachments = attachmentsPayload;
       }
 
-      const { error } = await supabase.from("posts").insert([payload]);
+      let error;
+      if (editingPostId) {
+        const { error: updateError } = await supabase.from("posts").update(payload).eq("id", editingPostId);
+        error = updateError;
+      } else {
+        const { error: insertError } = await supabase.from("posts").insert([payload]);
+        error = insertError;
+      }
+      
       if (error) {
-        toast({ title: "Post failed", description: error.message, variant: "destructive" });
+        toast({ title: editingPostId ? "Update failed" : "Post failed", description: error.message, variant: "destructive" });
         return;
       }
 
@@ -474,6 +590,7 @@ const Community = () => {
       setNewDirectData(true);
       setAttachedFiles([]);
       setIsCreatingPost(false);
+      setEditingPostId(null);
       toast({ title: "Post queued", description: "Your insight will appear on the board shortly." });
       await refreshCommunityPosts();
     } catch (error) {
@@ -510,27 +627,45 @@ const Community = () => {
   };
 
   const handleShare = async (id: number) => {
-    const post = posts.find((p) => p.id === id);
-    if (!post) return;
+    try {
+      const shareUrl = `${window.location.origin}/community?postId=${id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      toast({ title: "Link copied!", description: "Link copied to clipboard." });
+    } catch (err) {
+      toast({ title: "Failed to copy", description: "Could not copy link.", variant: "destructive" });
+    }
+  };
 
-    const shareData = {
-      title: post.title,
-      text: post.content,
-      url: window.location.href,
-    };
 
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      try {
-        await navigator.share(shareData);
-        toast({ title: "Shared!", description: "Post shared successfully." });
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") {
-          console.error("Error sharing:", err);
-        }
-      }
-    } else {
-      await navigator.clipboard.writeText(window.location.href);
-      toast({ title: "Link copied!", description: "Share the board with your network." });
+  const handleEditComment = async () => {
+    if (!editingCommentId || !editingCommentContent.trim()) return;
+    try {
+      const { error } = await supabase.from("comments").update({ content: editingCommentContent.trim() }).eq("id", editingCommentId);
+      if (error) throw error;
+      toast({ title: "Comment updated!" });
+      await refreshCommunityPosts();
+      setEditingCommentId(null);
+      setEditingCommentContent("");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "An unknown error occurred";
+      toast({ title: "Update failed", description: message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteComment = async () => {
+    if (!deletingCommentId) return;
+    setIsDeletingComment(true);
+    try {
+      const { error } = await supabase.from("comments").delete().eq("id", deletingCommentId);
+      if (error) throw error;
+      toast({ title: "Comment deleted" });
+      await refreshCommunityPosts();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "An unknown error occurred";
+      toast({ title: "Delete failed", description: message, variant: "destructive" });
+    } finally {
+      setIsDeletingComment(false);
+      setDeletingCommentId(null);
     }
   };
 
@@ -611,17 +746,18 @@ const Community = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-4xl font-bold font-display">Community Board</h1>
-                <p className="text-sm text-muted-foreground">Filter by topic and keep every discussion action-oriented.</p>
+                <p className="text-sm text-muted-foreground">Find & Post Volunteer Opportunities, Filter by topic and keep every discussion action-oriented.</p>
               </div>
               <button
                 onClick={() => {
                   if (!requireAuthAction("Log in to create posts.")) return;
                   setIsCreatingPost(true);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="btn-squared flex items-center gap-2"
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap px-6 py-3 font-bold text-primary-foreground bg-primary rounded-xl shadow-[0_5px_0_rgb(20,83,45)] hover:shadow-[0_2px_0_rgb(20,83,45)] hover:translate-y-[3px] transition-all active:shadow-none active:translate-y-[5px]"
                 disabled={!session}
               >
-                <Plus className="w-4 h-4" /> Create Post
+                <Plus className="w-5 h-5" /> Create Post
               </button>
             </div>
 
@@ -634,10 +770,13 @@ const Community = () => {
             {session && isCreatingPost && (
               <div className="bg-background border border-border p-6 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold font-display">Create a new post</h2>
-                  <button
+                  <h2 className="text-xl font-bold font-display">{editingPostId ? "Edit post" : "Create a new post"}</h2>
+                                    <button
                     type="button"
-                    onClick={() => setIsCreatingPost(false)}
+                    onClick={() => {
+                      setIsCreatingPost(false);
+                      setEditingPostId(null);
+                    }}
                     className="text-muted-foreground hover:text-foreground"
                   >
                     <X className="w-5 h-5" />
@@ -671,12 +810,12 @@ const Community = () => {
                       </p>
                     </div>
                   </div>
-                  <textarea
-                    placeholder="Share your observation, data, or ask"
+                  <ReactQuill
+                    theme="snow"
                     value={newContent}
-                    onChange={(event) => setNewContent(event.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-2 bg-background border border-border focus:outline-none focus:border-primary transition-colors resize-none"
+                    onChange={setNewContent}
+                    placeholder="Share your observation, data, or ask"
+                    className="bg-background [&_.ql-container]:min-h-[150px] [&_.ql-editor]:min-h-[150px] mb-4"
                   />
                   <input
                     type="text"
@@ -771,21 +910,19 @@ const Community = () => {
                       ))}
                     </div>
                   )}
-                  <div className="flex gap-2 items-center">
-                    <button type="submit" className="btn-squared gap-2" disabled={!session || isSubmittingPost}>
+                  <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-4 border-t border-border pt-4 mt-2">
+                    <div className="text-xs text-muted-foreground max-w-md">
+                      {session && (
+                        <p className="font-medium text-foreground mb-1">Posts show the upload type, category, and tags for easier discovery.</p>
+                      )}
+                      <p>Every upload, comment, and vote stays tied to your profile. Live calculators keep the data you saved in sync.</p>
+                    </div>
+                    <button type="submit" className="btn-squared-primary inline-flex items-center justify-center gap-2 w-full sm:w-auto shrink-0" disabled={!session || isSubmittingPost}>
                       <PenLine className="w-4 h-4" />
-                      {isSubmittingPost ? "Publishing…" : "Publish Post"}
+                      {isSubmittingPost ? "Publishing…" : editingPostId ? "Save Changes" : "Publish Post"}
                     </button>
-                    {session && (
-                      <p className="text-xs text-muted-foreground">
-                        Posts show the upload type, category, and tags for easier discovery.
-                      </p>
-                    )}
                   </div>
                 </form>
-                <p className="text-xs text-muted-foreground">
-                  Every upload, comment, and vote stays tied to your profile. Live calculators keep the data you saved in sync.
-                </p>
               </div>
             )}
 
@@ -807,8 +944,8 @@ const Community = () => {
 
             <div className="space-y-4">
               {loadingPosts ? (
-                <div className="text-center py-12 text-muted-foreground bg-background border border-border">
-                  Loading posts…
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => <PostSkeleton key={i} />)}
                 </div>
               ) : displayedPosts.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground bg-background border border-border">
@@ -844,17 +981,43 @@ const Community = () => {
                           <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide border border-border">
                             {post.uploadType}
                           </span>
+                          {session?.user.id === post.userId && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <button onClick={() => handleEditPost(post)} className="p-1 hover:text-primary transition-colors rounded-full" title="Edit post">
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => setDeletingPostId(post.id)} className="p-1 hover:text-destructive transition-colors rounded-full" title="Delete post">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-2xl font-bold font-display flex-1">{post.title}</h3>
-                        {post.hasDirectData && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide bg-emerald-500/10 text-emerald-500 rounded-full">
-                            <Sparkles className="w-3 h-3" /> Direct data
-                          </span>
-                        )}
                       </div>
-                      <p className="text-foreground/80 leading-relaxed">{post.content}</p>
+                      <div className="text-foreground/80 leading-relaxed prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: parseMarkdownBold(post.content) }} />
+                      {post.attachments && post.attachments.length > 0 && (
+                        <div className="py-4">
+                          {post.attachments.length === 1 ? (
+                            <AttachmentPreview attachment={post.attachments[0]} />
+                          ) : (
+                            <Carousel className="w-full max-w-3xl mx-auto group">
+                              <CarouselContent>
+                                {post.attachments.map((att, idx) => (
+                                  <CarouselItem key={idx}>
+                                    <AttachmentPreview attachment={att} />
+                                  </CarouselItem>
+                                ))}
+                              </CarouselContent>
+                              <div className="hidden group-hover:block transition-opacity">
+                                <CarouselPrevious className="left-2" />
+                                <CarouselNext className="right-2" />
+                              </div>
+                            </Carousel>
+                          )}
+                        </div>
+                      )}
                       {post.tags && post.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {post.tags.map((tag) => (
@@ -917,7 +1080,40 @@ const Community = () => {
                                   <span className="px-2 py-0.5 rounded-full bg-muted/80 text-muted-foreground">{comment.role}</span>
                                   <span>{post.category}</span>
                                 </div>
-                                <p className="text-foreground/80 leading-relaxed">{comment.content}</p>
+                                                                  {editingCommentId === comment.id ? (
+                                    <div className="space-y-2 mt-2">
+                                      <input
+                                        type="text"
+                                        value={editingCommentContent}
+                                        onChange={(e) => setEditingCommentContent(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            handleEditComment();
+                                          }
+                                        }}
+                                        className="w-full px-3 py-1.5 bg-background border border-border text-sm focus:outline-none focus:border-primary transition-colors rounded-md"
+                                      />
+                                      <div className="flex justify-end gap-3">
+                                        <button onClick={() => setEditingCommentId(null)} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
+                                        <button onClick={handleEditComment} className="text-xs text-primary font-semibold hover:text-primary/80">Save</button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-start justify-between gap-4 mt-2">
+                                      <p className="text-foreground/80 leading-relaxed flex-1">{comment.content}</p>
+                                      {session?.user?.id === comment.authorId && (
+                                        <div className="flex items-center gap-1 shrink-0 mt-1">
+                                          <button onClick={() => { setEditingCommentId(comment.id); setEditingCommentContent(comment.content); }} className="p-1 text-muted-foreground hover:text-primary transition-colors rounded-full" title="Edit comment">
+                                            <Edit className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button onClick={() => setDeletingCommentId(comment.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors rounded-full" title="Delete comment">
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                               </div>
                             ))
                           )}
@@ -1048,6 +1244,41 @@ const Community = () => {
         </div>
       </main>
       <Footer />
+
+      <AlertDialog open={!!deletingPostId} onOpenChange={(open) => !open && setDeletingPostId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your post and remove the data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); handleDeletePost(); }} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isDeleting ? "Deleting..." : "Delete Post"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deletingCommentId} onOpenChange={(open) => !open && setDeletingCommentId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete comment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your comment. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingComment}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); handleDeleteComment(); }} disabled={isDeletingComment} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isDeletingComment ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 };

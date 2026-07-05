@@ -47,7 +47,7 @@ const PrivacyPolicy = () => {
                     <section>
                         <h2 className="text-2xl font-semibold mt-8 mb-4">4. Contact Us</h2>
                         <p className="text-foreground/80 leading-relaxed mb-4">
-                            If you have any questions or concerns about this privacy policy, please contact us at: <a href="mailto:contact@greenlens.org" className="text-primary hover:underline">contact@greenlens.org</a>.
+                            If you have any questions or concerns about this privacy policy, please contact us at: <a href="mailto:annadiya1@gmail.com" className="text-primary hover:underline">annadiya1@gmail.com</a>.
                         </p>
                     </section>
                 </div>

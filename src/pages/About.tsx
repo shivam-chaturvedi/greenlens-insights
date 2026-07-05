@@ -118,8 +118,12 @@ const About = () => {
             </div>
               <div className="order-1 lg:order-2 bg-muted p-12 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="w-32 h-32 bg-primary/10 mx-auto mb-6 flex items-center justify-center">
-                    <span className="font-display text-4xl font-bold text-primary">AP</span>
+                  <div className="w-48 h-48 mx-auto mb-6 overflow-hidden rounded-full shadow-xl">
+                    <img 
+                      src="/profile-buisness.png" 
+                      alt="Anna Panjwani" 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <p className="text-sm text-muted-foreground">Scholar & Developer</p>
                   <p className="text-xs text-muted-foreground mt-2">
@@ -230,7 +234,7 @@ const About = () => {
               <ArrowUpRight className="w-4 h-4" />
             </Link>
             <a
-              href="mailto:contact@greenlens.org"
+              href="mailto:annadiya1@gmail.com"
               className="btn-squared-outline inline-flex items-center justify-center gap-2"
             >
               Contact Us

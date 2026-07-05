@@ -3,33 +3,69 @@ import { BarChart3, Shield, Users, BookOpen, Target, Globe } from "lucide-react"
 const features = [
   {
     icon: BarChart3,
-    title: "Multi-Level Carbon Tracking",
-    description: "Measure emissions at appliance, machine, department, organizational, and individual levels for complete visibility.",
+    title: "Sustainability Consulting",
+    description: (
+      <>
+        <strong>Breaking down the barriers that prevent organizations from taking action.</strong>
+        <br />
+        We provide free on-site sustainability assessments for businesses, clinics, and community organizations, identifying practical opportunities to reduce costs, improve efficiency, and lower emissions.
+      </>
+    ),
   },
   {
     icon: Target,
-    title: "Sustainability Gap Analyzer",
-    description: "Compare declared net-zero claims against real emission data to produce a clear Sustainability Gap Score.",
+    title: "Action Plans & Impact Reports",
+    description: (
+      <>
+        <strong>Turning sustainability goals into measurable results.</strong>
+        <br />
+        Every consultation is supported by data-driven recommendations, implementation strategies, financial analyses, and emissions reduction estimates that make sustainability both achievable and financially beneficial.
+      </>
+    ),
   },
   {
     icon: Shield,
-    title: "AI-Guided Reduction Insights",
-    description: "Get rule-based recommendations to reduce emissions through optimization, efficiency, and alternatives.",
+    title: "Community Action Network",
+    description: (
+      <>
+        <strong>Connecting people with opportunities to make a difference.</strong>
+        <br />
+        Our community forum highlights volunteer opportunities, local initiatives, environmental events, and collaborative projects that empower residents to create change where they live.
+      </>
+    ),
   },
   {
     icon: BookOpen,
-    title: "Green Journalism Tools",
-    description: "Convert complex emission data into compelling public-facing narratives and transparent reports.",
+    title: "Sustainability Research & Analytics",
+    description: (
+      <>
+        <strong>Using data to uncover what works.</strong>
+        <br />
+        Through quantitative research, including our Fairfax County school sustainability index, we identify sustainability leaders, investigate best practices, and generate insights that can guide future action.
+      </>
+    ),
   },
   {
     icon: Users,
-    title: "Education-First Design",
-    description: "Carbon literacy modules built for students, educators, NGOs, and anyone committed to learning.",
+    title: "Household Sustainability Resources",
+    description: (
+      <>
+        <strong>Helping families save money while reducing their environmental impact.</strong>
+        <br />
+        We connect homeowners with practical strategies, rebates, incentives, and efficiency improvements that lower utility costs and emissions at the same time.
+      </>
+    ),
   },
   {
     icon: Globe,
-    title: "Global Accountability",
-    description: "Track and compare sustainability efforts across institutions with transparent leaderboards.",
+    title: "Climate Education & Awareness",
+    description: (
+      <>
+        <strong>Transforming information into action.</strong>
+        <br />
+        Through blogs, guides, tools, and educational content, we make climate, sustainability, and environmental topics accessible, empowering individuals to make informed decisions in their daily lives.
+      </>
+    ),
   },
 ];
 
@@ -43,7 +79,7 @@ const FeaturesGrid = () => {
             KEY CAPABILITIES
           </p>
           <h2 className="font-display text-4xl md:text-5xl font-bold max-w-3xl">
-            Everything you need for transparent climate accountability
+            Our Initiatives to Save Money and Reduce Emissions
           </h2>
         </div>
 
