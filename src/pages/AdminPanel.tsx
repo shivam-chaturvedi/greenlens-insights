@@ -36,8 +36,28 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Edit, Trash2, UploadCloud } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Edit,
+  GripVertical,
+  Image as ImageIcon,
+  Loader2,
+  Trash2,
+  UploadCloud,
+  X,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import {
+  fetchPhotos,
+  uploadSinglePhoto,
+  updatePhoto,
+  deletePhoto,
+  reorderPhotos,
+  Photo,
+  validatePhotoFile,
+} from "@/lib/photos";
 
 const categories = ["Investigation", "Report", "Analysis", "Feature", "Guide", "Education"];
 const statusOptions = [
@@ -108,10 +128,11 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-type AdminView = "consulting" | "articles";
+type AdminView = "consulting" | "articles" | "photos";
 const ADMIN_VIEW_OPTIONS: { id: AdminView; label: string }[] = [
   { id: "consulting", label: "Consulting reports" },
   { id: "articles", label: "Journalism articles" },
+  { id: "photos", label: "Photos" },
 ];
 
 type ConsultingFormState = {
@@ -1392,6 +1413,676 @@ const AdminArticleSkeleton = () => (
   </div>
 );
 
+type PendingUpload = {
+  id: string;
+  file: File;
+  previewUrl: string;
+  caption: string;
+};
+
+const PhotosAdminSection = () => {
+  const { session, profileRole } = useSupabaseSession();
+  const isAdmin = profileRole === "admin";
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const {
+    data: photos = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["photos"],
+    queryFn: fetchPhotos,
+    enabled: isAdmin,
+    refetchOnWindowFocus: false,
+  });
+
+  const [pendingFiles, setPendingFiles] = useState<PendingUpload[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const [orderedPhotos, setOrderedPhotos] = useState<Photo[]>([]);
+  const [isReordering, setIsReordering] = useState(false);
+
+  const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null);
+  const [editCaption, setEditCaption] = useState("");
+  const [editReplacementFile, setEditReplacementFile] = useState<File | null>(null);
+  const [editReplacementPreview, setEditReplacementPreview] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const [deletingPhoto, setDeletingPhoto] = useState<Photo | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    setOrderedPhotos(photos);
+  }, [photos]);
+
+  const onDrop = useCallback(
+    (acceptedFiles: File[], fileRejections: any[]) => {
+      if (fileRejections.length > 0) {
+        toast({
+          title: "File rejected",
+          description: "Some files were rejected. Please ensure files are images under 10MB.",
+          variant: "destructive",
+        });
+      }
+
+      const newPending: PendingUpload[] = [];
+      for (const file of acceptedFiles) {
+        const validation = validatePhotoFile(file);
+        if (!validation.valid) {
+          toast({
+            title: "Invalid file",
+            description: validation.error,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        newPending.push({
+          id: `${file.name}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          file,
+          previewUrl: URL.createObjectURL(file),
+          caption: "",
+        });
+      }
+
+      if (newPending.length > 0) {
+        setPendingFiles((prev) => [...prev, ...newPending]);
+        toast({
+          title: `${newPending.length} ${newPending.length === 1 ? "photo" : "photos"} added to preview`,
+          description: "Add captions below and click 'Upload Photos' when ready.",
+        });
+      }
+    },
+    [toast]
+  );
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      "image/*": [".jpeg", ".jpg", ".png", ".webp", ".gif", ".avif"],
+    },
+    multiple: true,
+  });
+
+  const removePending = (id: string) => {
+    setPendingFiles((prev) => {
+      const item = prev.find((p) => p.id === id);
+      if (item) URL.revokeObjectURL(item.previewUrl);
+      return prev.filter((p) => p.id !== id);
+    });
+  };
+
+  const handleCaptionChange = (id: string, newCaption: string) => {
+    setPendingFiles((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, caption: newCaption } : item))
+    );
+  };
+
+  const handleUploadAll = async () => {
+    if (pendingFiles.length === 0) return;
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    let successCount = 0;
+    const totalCount = pendingFiles.length;
+    const initialOrderOffset = orderedPhotos.length;
+
+    for (let i = 0; i < pendingFiles.length; i++) {
+      const item = pendingFiles[i];
+      try {
+        await uploadSinglePhoto(
+          item.file,
+          item.caption,
+          initialOrderOffset + i,
+          session?.user.id
+        );
+        successCount++;
+        setUploadProgress(Math.round(((i + 1) / totalCount) * 100));
+        URL.revokeObjectURL(item.previewUrl);
+      } catch (err: any) {
+        toast({
+          title: `Upload failed for ${item.file.name}`,
+          description: err.message || "Failed to upload photo",
+          variant: "destructive",
+        });
+      }
+    }
+
+    setIsUploading(false);
+    setUploadProgress(0);
+    setPendingFiles([]);
+
+    if (successCount > 0) {
+      toast({
+        title: "Upload complete!",
+        description: `Successfully uploaded ${successCount} ${successCount === 1 ? "photo" : "photos"}.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["photos"] });
+    }
+  };
+
+  const handleMove = async (index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= orderedPhotos.length) return;
+
+    const newPhotos = [...orderedPhotos];
+    const temp = newPhotos[index];
+    newPhotos[index] = newPhotos[targetIndex];
+    newPhotos[targetIndex] = temp;
+
+    const updatedItems = newPhotos.map((item, idx) => ({
+      id: item.id,
+      displayOrder: idx,
+    }));
+
+    setOrderedPhotos(newPhotos);
+    setIsReordering(true);
+
+    try {
+      await reorderPhotos(updatedItems);
+      toast({ title: "Photo reordered successfully" });
+      queryClient.invalidateQueries({ queryKey: ["photos"] });
+    } catch (err: any) {
+      toast({
+        title: "Reorder failed",
+        description: err.message || "Failed to save photo ordering.",
+        variant: "destructive",
+      });
+      setOrderedPhotos(photos);
+    } finally {
+      setIsReordering(false);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, _index: number) => {
+    e.preventDefault();
+  };
+
+  const handleDropOnPhoto = async (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) return;
+
+    const newPhotos = [...orderedPhotos];
+    const [draggedPhoto] = newPhotos.splice(draggedIndex, 1);
+    newPhotos.splice(dropIndex, 0, draggedPhoto);
+
+    setDraggedIndex(null);
+    setOrderedPhotos(newPhotos);
+    setIsReordering(true);
+
+    const updatedItems = newPhotos.map((item, idx) => ({
+      id: item.id,
+      displayOrder: idx,
+    }));
+
+    try {
+      await reorderPhotos(updatedItems);
+      toast({ title: "Photo reordered successfully" });
+      queryClient.invalidateQueries({ queryKey: ["photos"] });
+    } catch (err: any) {
+      toast({
+        title: "Reorder failed",
+        description: err.message || "Failed to save photo order.",
+        variant: "destructive",
+      });
+      setOrderedPhotos(photos);
+    } finally {
+      setIsReordering(false);
+    }
+  };
+
+  const openEditModal = (photo: Photo) => {
+    setEditingPhoto(photo);
+    setEditCaption(photo.caption);
+    setEditReplacementFile(null);
+    setEditReplacementPreview(null);
+  };
+
+  const handleEditReplacementFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validation = validatePhotoFile(file);
+    if (!validation.valid) {
+      toast({ title: "Invalid file", description: validation.error, variant: "destructive" });
+      return;
+    }
+    setEditReplacementFile(file);
+    setEditReplacementPreview(URL.createObjectURL(file));
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPhoto) return;
+    setIsUpdating(true);
+
+    try {
+      await updatePhoto(editingPhoto.id, {
+        caption: editCaption,
+        file: editReplacementFile || undefined,
+        oldStoragePath: editingPhoto.storagePath,
+      });
+
+      toast({ title: "Photo updated", description: "Changes saved successfully." });
+      setEditingPhoto(null);
+      if (editReplacementPreview) URL.revokeObjectURL(editReplacementPreview);
+      queryClient.invalidateQueries({ queryKey: ["photos"] });
+    } catch (err: any) {
+      toast({
+        title: "Update failed",
+        description: err.message || "Failed to update photo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!deletingPhoto) return;
+    setIsDeleting(true);
+
+    try {
+      await deletePhoto(deletingPhoto);
+      toast({ title: "Photo deleted", description: "Photo removed from gallery." });
+      setDeletingPhoto(null);
+      queryClient.invalidateQueries({ queryKey: ["photos"] });
+    } catch (err: any) {
+      toast({
+        title: "Delete failed",
+        description: err.message || "Failed to delete photo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (!isAdmin) {
+    return (
+      <div className="rounded-3xl border border-border bg-card p-12 text-center space-y-3">
+        <h3 className="text-xl font-bold text-foreground">Access Restricted</h3>
+        <p className="text-muted-foreground text-sm">
+          You must be an administrator to manage the photo gallery.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Upload Box (React Dropzone) */}
+      <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold text-foreground font-display">Upload Photos</h2>
+          <p className="text-sm text-muted-foreground">
+            Drag and drop images below, or click to select files. Supports JPG, PNG, WebP, GIF, AVIF (Max 10MB each).
+          </p>
+        </div>
+
+        {/* Dropzone Area */}
+        <div
+          {...getRootProps()}
+          className={`border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center cursor-pointer transition-all duration-200 select-none ${
+            isDragActive
+              ? "border-primary bg-primary/5 scale-[0.99]"
+              : "border-border hover:border-primary/50 hover:bg-muted/30"
+          }`}
+        >
+          <input {...getInputProps()} />
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+              <UploadCloud className="w-7 h-7" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-base font-semibold text-foreground">
+                {isDragActive ? "Drop the photos here..." : "Click or drag photos here to upload"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                You can select multiple photos at once. Automatic optimization applied.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Pending Photos Preview & Captioning */}
+        {pendingFiles.length > 0 && (
+          <div className="space-y-4 pt-4 border-t border-border">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">
+                Files Ready to Upload ({pendingFiles.length})
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  pendingFiles.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+                  setPendingFiles([]);
+                }}
+                disabled={isUploading}
+                className="text-xs text-muted-foreground hover:text-destructive"
+              >
+                Clear All
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {pendingFiles.map((item) => (
+                <div
+                  key={item.id}
+                  className="relative bg-muted/40 border border-border rounded-xl p-3 flex flex-col gap-3"
+                >
+                  <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-background">
+                    <img
+                      src={item.previewUrl}
+                      alt={item.file.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePending(item.id)}
+                      disabled={isUploading}
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-black text-white transition"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2 flex-1 flex flex-col justify-between">
+                    <div className="text-xs text-muted-foreground truncate font-mono">
+                      {item.file.name} ({(item.file.size / (1024 * 1024)).toFixed(1)}MB)
+                    </div>
+                    <Textarea
+                      placeholder="Add caption (testimonials, business names, or descriptions)..."
+                      value={item.caption}
+                      onChange={(e) => handleCaptionChange(item.id, e.target.value)}
+                      disabled={isUploading}
+                      className="text-xs min-h-[60px] bg-background resize-none"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Progress bar during batch upload */}
+            {isUploading && (
+              <div className="space-y-2 pt-2">
+                <div className="flex justify-between text-xs font-semibold text-foreground">
+                  <span>Uploading photos...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <Progress value={uploadProgress} className="h-2" />
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                onClick={handleUploadAll}
+                disabled={isUploading}
+                className="w-full sm:w-auto"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-4 h-4 mr-2" />
+                    Upload {pendingFiles.length} {pendingFiles.length === 1 ? "Photo" : "Photos"}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Gallery Management Section */}
+      <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold text-foreground font-display">
+              Manage Gallery Photos
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Reorder, edit captions, replace images, or delete photos. Changes automatically sync to the public page.
+            </p>
+          </div>
+          <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-muted text-muted-foreground w-fit">
+            {orderedPhotos.length} {orderedPhotos.length === 1 ? "Photo" : "Photos"} Total
+          </span>
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <div key={idx} className="border border-border rounded-2xl p-4 space-y-3">
+                <Skeleton className="w-full aspect-[4/3] rounded-xl" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="p-8 text-center border border-destructive/30 bg-destructive/5 rounded-2xl text-destructive space-y-2">
+            <p className="font-semibold">Failed to load photo gallery</p>
+            <p className="text-xs text-muted-foreground">{(error as Error)?.message}</p>
+          </div>
+        ) : orderedPhotos.length === 0 ? (
+          <div className="p-12 text-center border border-border rounded-2xl space-y-3 bg-muted/20">
+            <ImageIcon className="w-10 h-10 mx-auto text-muted-foreground" />
+            <p className="font-semibold text-foreground">No photos in gallery</p>
+            <p className="text-xs text-muted-foreground">
+              Upload your first photo above to feature it in the public gallery.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {orderedPhotos.map((photo, index) => (
+              <div
+                key={photo.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDropOnPhoto(e, index)}
+                className={`group bg-background border rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between transition-all duration-200 ${
+                  draggedIndex === index ? "opacity-50 border-primary border-dashed" : "border-border"
+                }`}
+              >
+                <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+                  <img
+                    src={photo.publicUrl}
+                    alt={photo.caption || "Gallery photo"}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-xs font-semibold">
+                    <GripVertical className="w-3.5 h-3.5 cursor-grab active:cursor-grabbing text-white/70" />
+                    <span>#{index + 1}</span>
+                  </div>
+                </div>
+
+                <div className="p-4 flex-1 flex flex-col justify-between border-t border-border">
+                  <p className="text-xs sm:text-sm font-medium text-foreground leading-relaxed break-words">
+                    {photo.caption || <span className="italic text-muted-foreground">No caption</span>}
+                  </p>
+                </div>
+
+                <div className="p-3 bg-muted/30 border-t border-border flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleMove(index, "up")}
+                      disabled={index === 0 || isReordering}
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      title="Move Up"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleMove(index, "down")}
+                      disabled={index === orderedPhotos.length - 1 || isReordering}
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      title="Move Down"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditModal(photo)}
+                      className="h-8 text-xs px-2.5"
+                    >
+                      <Edit className="w-3.5 h-3.5 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeletingPhoto(photo)}
+                      className="h-8 text-xs px-2.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Edit Photo Modal */}
+      {editingPhoto && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background border border-border rounded-3xl p-6 max-w-lg w-full space-y-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-foreground">Edit Photo</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPhoto(null);
+                  if (editReplacementPreview) URL.revokeObjectURL(editReplacementPreview);
+                }}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="aspect-[4/3] bg-muted rounded-2xl overflow-hidden relative">
+                <img
+                  src={editReplacementPreview || editingPhoto.publicUrl}
+                  alt="Edit preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-foreground">Replace Image (Optional)</label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleEditReplacementFileChange}
+                  disabled={isUpdating}
+                  className="text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-foreground">Caption</label>
+                <Textarea
+                  placeholder="Enter caption, testimonial, business name, or description..."
+                  value={editCaption}
+                  onChange={(e) => setEditCaption(e.target.value)}
+                  disabled={isUpdating}
+                  className="text-sm min-h-[100px] resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditingPhoto(null);
+                  if (editReplacementPreview) URL.revokeObjectURL(editReplacementPreview);
+                }}
+                disabled={isUpdating}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={isUpdating}>
+                {isUpdating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingPhoto && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background border border-border rounded-3xl p-6 max-w-md w-full space-y-6 shadow-xl animate-in fade-in zoom-in-95 duration-200 text-center">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-foreground">Delete Photo?</h3>
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to delete this photo from the gallery? This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="aspect-[4/3] max-w-[200px] mx-auto rounded-xl overflow-hidden bg-muted">
+              <img src={deletingPhoto.publicUrl} alt="Delete photo target" className="w-full h-full object-cover" />
+            </div>
+
+            <div className="flex justify-center gap-3">
+              <Button variant="outline" onClick={() => setDeletingPhoto(null)} disabled={isDeleting}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteConfirmed} disabled={isDeleting}>
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete Photo"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AdminPanel = () => {
   const [activeView, setActiveView] = useState<AdminView>("consulting");
 
@@ -1412,7 +2103,13 @@ const AdminPanel = () => {
               </Button>
             ))}
           </div>
-          {activeView === "consulting" ? <ConsultingAdminSection /> : <ArticlesAdminSection />}
+          {activeView === "consulting" ? (
+            <ConsultingAdminSection />
+          ) : activeView === "articles" ? (
+            <ArticlesAdminSection />
+          ) : (
+            <PhotosAdminSection />
+          )}
         </div>
       </main>
       <Footer />
